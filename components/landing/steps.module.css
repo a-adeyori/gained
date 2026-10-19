@@ -1,0 +1,106 @@
+.row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+}
+@media (min-width: 900px) {
+  .row {
+    flex-direction: row;
+    height: 26rem;
+  }
+}
+
+.panel {
+  position: relative;
+  flex: 1;
+  min-height: 15rem;
+  overflow: hidden;
+  border-radius: 1.75rem;
+  padding: 1.5rem;
+  background: color-mix(in srgb, var(--c) 14%, var(--card));
+  border: 1px solid color-mix(in srgb, var(--c) 35%, transparent);
+  transition:
+    flex 700ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    background 500ms ease;
+  outline: none;
+}
+@media (min-width: 900px) {
+  .row:hover .panel,
+  .row:focus-within .panel {
+    flex: 0.8;
+  }
+  .row .panel:hover,
+  .row .panel:focus-visible {
+    flex: 2.2;
+    background: var(--c);
+  }
+}
+
+.n {
+  font-variant-numeric: tabular-nums;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--c);
+  transition: color 300ms ease;
+}
+.glyph {
+  position: absolute;
+  right: -1rem;
+  top: -2.5rem;
+  font-size: 13rem;
+  line-height: 1;
+  color: color-mix(in srgb, var(--c) 30%, transparent);
+  transition:
+    transform 900ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    color 300ms ease;
+}
+.panel:hover .glyph,
+.panel:focus-visible .glyph {
+  transform: rotate(-18deg) scale(1.15);
+  color: rgba(18, 18, 16, 0.18);
+}
+
+.body {
+  position: absolute;
+  left: 1.5rem;
+  right: 1.5rem;
+  bottom: 1.5rem;
+}
+.word {
+  font-family: var(--font-display);
+  font-size: clamp(3rem, 6vw, 4.8rem);
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  transition: color 300ms ease;
+}
+.line {
+  margin-top: 0.75rem;
+  max-width: 22rem;
+  font-size: 1.05rem;
+  line-height: 1.4;
+  color: var(--ink-soft);
+  transition:
+    opacity 400ms ease,
+    transform 500ms ease,
+    color 300ms ease;
+}
+@media (min-width: 900px) {
+  .line {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  .panel:hover .line,
+  .panel:focus-visible .line {
+    opacity: 1;
+    transform: none;
+  }
+}
+.panel:hover .word,
+.panel:hover .line,
+.panel:hover .n,
+.panel:focus-visible .word,
+.panel:focus-visible .line,
+.panel:focus-visible .n {
+  color: #121210;
+}

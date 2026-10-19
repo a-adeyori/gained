@@ -1,0 +1,44 @@
+'use server';
+
+import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
+import { requireUser } from '@/lib/auth';
+import { db } from '@/lib/db';
+import { startJob } from '@/lib/jobs';
+import { appealWindowClosesAt } from '@/lib/retention';
+
+/** The family's side of "marked complete by both sides". */
+export async function confirmSession(sessionId: string) {
+  const user = await requireUser();
+  const session = await db.session.findUnique({ where: { id: sessionId } });
+  if (!session || ![session.payer_id, session.student_id].includes(user.id)) return;
+  if (!session.family_confirmed_at) {
+    await db.session.update({ where: { id: sessionId }, data: { family_confirmed_at: new Date() } });
+    if (session.tutor_confirmed_at) await startJob('releasePayment', sessionId);
+  }
+  revalidatePath(`/sessions/${sessionId}`);
+}
+
+export type AppealState = { error?: string } | undefined;
+
+/** Either side can dispute a grade within 72 hours; the final capture waits until it's resolved. */
+export async function openAppeal(sessionId: string, _prev: AppealState, form: FormData): Promise<AppealState> {
+  const user = await requireUser();
+  const session = await db.session.findUnique({
+    where: { id: sessionId },
+    include: { escrow: true, appeals: { where: { status: 'open' } } },
+  });
+  if (!session || ![session.payer_id, session.student_id, session.tutor_id].includes(user.id)) return { error: 'Session not found.' };
+  if (!session.ended_at || new Date() > appealWindowClosesAt(session.ended_at)) return { error: 'The 72-hour appeal window has closed.' };
+  if (session.appeals.length) return { error: 'There’s already an open appeal on this session.' };
+  if (!session.escrow || ['settled', 'returned'].includes(session.escrow.state)) return { error: 'This session has already settled.' };
+
+  const reason = String(form.get('reason') ?? '').trim();
+  if (reason.length < 10) return { error: 'Tell us a little more about what seems wrong (at least a sentence).' };
+
+  await db.$transaction([
+    db.appeal.create({ data: { session_id: sessionId, opened_by: user.id, reason: reason.slice(0, 2000) } }),
+    db.escrow.update({ where: { session_id: sessionId }, data: { state: 'in_appeal' } }),
+  ]);
+  redirect(`/sessions/${sessionId}`);
+}

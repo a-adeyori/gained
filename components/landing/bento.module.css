@@ -1,0 +1,340 @@
+/* Subject bento: colour-blocked tiles, dark ink, each motif idles slowly and speeds up on hover. */
+
+.grid {
+  margin-top: 3.5rem;
+  display: grid;
+  gap: 0.875rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: 13rem;
+}
+@media (min-width: 900px) {
+  .grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-auto-rows: 15rem;
+  }
+  .big {
+    grid-column: span 2;
+    grid-row: span 2;
+  }
+  .wide {
+    grid-column: span 2;
+  }
+}
+.big,
+.wide {
+  grid-column: span 2;
+}
+
+.tile {
+  border-radius: 1.75rem;
+}
+.inner {
+  position: relative;
+  height: 100%;
+  overflow: hidden;
+  border-radius: inherit;
+  background: var(--tile);
+  color: #121210;
+  transition:
+    transform 500ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    border-radius 500ms ease;
+}
+/* A soft light that follows the pointer (--mx / --my come from Spotlight). */
+.inner::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 300ms ease;
+  background: radial-gradient(300px circle at var(--mx, 50%) var(--my, 50%), rgba(255, 255, 255, 0.45), transparent 60%);
+  pointer-events: none;
+}
+.tile:hover .inner {
+  transform: scale(0.975) rotate(-0.6deg);
+  border-radius: 2.5rem;
+}
+.tile:hover .inner::after {
+  opacity: 1;
+}
+
+.name {
+  position: absolute;
+  left: 1.25rem;
+  bottom: 1rem;
+  font-family: var(--font-display);
+  font-size: clamp(1.8rem, 3vw, 2.6rem);
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+.big .name {
+  font-size: clamp(2.6rem, 6vw, 5rem);
+}
+.art {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-bottom: 2.5rem;
+}
+
+/* Vertical word cycler: --n words plus a repeat of the first, for a seamless loop. */
+.cycle {
+  display: inline-block;
+  height: 1.15em;
+  overflow: hidden;
+  vertical-align: bottom;
+}
+.cycle > span {
+  display: flex;
+  flex-direction: column;
+  animation: cycle calc(var(--n) * 2.2s) cubic-bezier(0.7, 0, 0.3, 1) infinite;
+}
+.cycle > span > span {
+  height: 1.15em;
+  line-height: 1.15em;
+  white-space: nowrap;
+}
+@keyframes cycle {
+  to {
+    transform: translateY(calc(-100% * var(--n) / (var(--n) + 1)));
+  }
+}
+.tile:hover .cycle > span {
+  animation-duration: calc(var(--n) * 0.9s);
+}
+
+/* Math: a travelling sine wave behind the equation. */
+.wave {
+  position: absolute;
+  inset: 15% -5% 25%;
+  width: 110%;
+  height: 60%;
+}
+.wave path {
+  fill: none;
+  stroke: #121210;
+  stroke-width: 3;
+  stroke-dasharray: 14 12;
+  opacity: 0.25;
+  animation: dash 6s linear infinite;
+}
+.wave path + path {
+  stroke-dasharray: none;
+  opacity: 0.12;
+  transform: translateY(18px);
+}
+@keyframes dash {
+  to {
+    stroke-dashoffset: -260;
+  }
+}
+.tile:hover .wave path {
+  animation-duration: 1.5s;
+  opacity: 0.45;
+}
+.equation {
+  position: relative;
+  font-family: var(--font-display);
+  font-size: clamp(2.4rem, 6vw, 4.6rem);
+  font-style: italic;
+}
+
+/* Chemistry: bubbles rise behind the formula. */
+.formula {
+  position: relative;
+  z-index: 1;
+  font-family: var(--font-display);
+  font-size: 3.4rem;
+}
+.bubble {
+  position: absolute;
+  bottom: -20px;
+  left: calc(8% + var(--i) * 10%);
+  width: calc(10px + (var(--i) * 3px));
+  height: calc(10px + (var(--i) * 3px));
+  border: 2px solid rgba(18, 18, 16, 0.35);
+  border-radius: 9999px;
+  animation: bubble calc(5s + var(--i) * 0.6s) ease-in infinite;
+  animation-delay: calc(var(--i) * -0.9s);
+}
+@keyframes bubble {
+  to {
+    transform: translateY(-17rem) translateX(12px);
+    opacity: 0;
+  }
+}
+.tile:hover .bubble {
+  animation-duration: 1.6s;
+}
+
+/* Languages, history: big cycling words. */
+.word,
+.year {
+  font-family: var(--font-display);
+  font-size: clamp(2.6rem, 5vw, 3.6rem);
+}
+.year {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Biology: a turning double helix made of dots. */
+.helix {
+  display: flex;
+  gap: 0.55rem;
+  height: 5rem;
+  align-items: center;
+}
+.helix > i {
+  position: relative;
+  width: 2px;
+  height: 100%;
+  background: rgba(18, 18, 16, 0.18);
+  animation: helix 2.4s ease-in-out infinite;
+  animation-delay: calc(var(--i) * -0.24s);
+}
+.helix > i::before,
+.helix > i::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  width: 11px;
+  height: 11px;
+  margin-left: -5.5px;
+  border-radius: 9999px;
+  background: #121210;
+}
+.helix > i::before {
+  top: -5px;
+}
+.helix > i::after {
+  bottom: -5px;
+  background: #fff;
+}
+@keyframes helix {
+  50% {
+    transform: scaleY(-1);
+  }
+}
+.tile:hover .helix > i {
+  animation-duration: 1s;
+}
+
+/* Code: a line that types itself out, with a blinking caret. */
+.code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: clamp(1.2rem, 2.2vw, 1.6rem);
+  font-weight: 600;
+}
+.typed {
+  display: inline-block;
+  overflow: hidden;
+  white-space: nowrap;
+  border-right: 3px solid #121210;
+  width: 10ch;
+  animation:
+    type 3.6s steps(10) infinite,
+    caret 0.7s step-end infinite;
+}
+@keyframes type {
+  0%,
+  10% {
+    width: 0;
+  }
+  60%,
+  100% {
+    width: 10ch;
+  }
+}
+@keyframes caret {
+  50% {
+    border-color: transparent;
+  }
+}
+
+/* Physics: electrons orbiting a nucleus. */
+.atom {
+  position: relative;
+  width: 7rem;
+  height: 7rem;
+}
+.atom > i {
+  position: absolute;
+  inset: 0;
+  border: 2px solid rgba(18, 18, 16, 0.4);
+  border-radius: 50%;
+  animation: orbit 3s linear infinite;
+}
+.atom > i::after {
+  content: '';
+  position: absolute;
+  top: -5px;
+  left: 50%;
+  width: 10px;
+  height: 10px;
+  margin-left: -5px;
+  border-radius: 9999px;
+  background: #121210;
+}
+.atom > i:nth-child(1) {
+  transform: rotate(0deg) scaleY(0.38);
+  --r: 0deg;
+}
+.atom > i:nth-child(2) {
+  --r: 60deg;
+  animation-duration: 3.6s;
+}
+.atom > i:nth-child(3) {
+  --r: 120deg;
+  animation-duration: 4.2s;
+}
+@keyframes orbit {
+  from {
+    transform: rotate(var(--r)) scaleY(0.38) rotateZ(0deg);
+  }
+  to {
+    transform: rotate(var(--r)) scaleY(0.38) rotateZ(360deg);
+  }
+}
+.atom > b {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 16px;
+  height: 16px;
+  margin: -8px 0 0 -8px;
+  border-radius: 9999px;
+  background: #121210;
+}
+.tile:hover .atom > i {
+  animation-duration: 0.9s;
+}
+
+/* Writing: a highlighter swipes across the key phrase on hover. */
+.quote {
+  max-width: 30rem;
+  padding: 0 1.5rem;
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 2.6vw, 2.2rem);
+  line-height: 1.15;
+  text-align: center;
+}
+.quote mark {
+  color: inherit;
+  background: linear-gradient(transparent 55%, rgba(255, 107, 74, 0.7) 55%) no-repeat 0 0 / 0% 100%;
+  transition: background-size 700ms cubic-bezier(0.6, 0, 0.2, 1);
+}
+.tile:hover .quote mark {
+  background-size: 100% 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cycle > span,
+  .wave path,
+  .bubble,
+  .helix > i,
+  .typed,
+  .atom > i {
+    animation: none !important;
+  }
+}

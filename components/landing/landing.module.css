@@ -1,0 +1,329 @@
+/*
+ * Landing-only styles. The hero is always dark (Linear-style), so it re-scopes the dark
+ * design tokens from app/globals.css; Tailwind's inline theme reads these variables directly.
+ */
+.dark {
+  --ink: #f3f0e9;
+  --ink-soft: #d6d2c8;
+  --muted: #9c978b;
+  --surface: #0f0f0e;
+  --surface-2: #181816;
+  --card: #1a1a18;
+  --line: #2b2a26;
+  --line-strong: #3b3a35;
+  --gain: #3ccf7f;
+  --gain-ink: #6ee3a3;
+  --gain-soft: #12301f;
+  --focus: #6d9cf0;
+  --state-held: #9c998f;
+  --state-base: #6d9cf0;
+  --state-awaiting: #e6a93f;
+  --state-settled: #3ccf7f;
+  --state-returned: #a99cf6;
+  --state-appeal: #f06a5f;
+  color-scheme: dark;
+  background: var(--surface);
+  color: var(--ink);
+}
+
+/* A faint glow behind the product frame; quiet, not decorative noise. */
+/* background-image only: the shorthand would wipe out .dark's background colour. */
+.glow {
+  background-image: radial-gradient(60% 50% at 50% 0%, color-mix(in srgb, var(--gain) 10%, transparent), transparent 70%);
+}
+
+/* Frames of the product loop sit in one grid cell so the frame never changes height. */
+.stack {
+  display: grid;
+}
+.stack > * {
+  grid-area: 1 / 1;
+  transition: opacity 500ms ease, transform 500ms ease;
+}
+.hidden {
+  opacity: 0;
+  transform: translateY(6px);
+  pointer-events: none;
+}
+.shown {
+  opacity: 1;
+  transform: none;
+}
+
+.pop {
+  animation: pop 420ms cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ---------- Hero stage: aurora, floating equations, pointer parallax ---------- */
+
+/* The three blobs are the three colours of the money split: base, bonus, back to you. */
+.aurora {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.blob {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(90px);
+  opacity: 0.32;
+  will-change: transform;
+}
+.blobA {
+  width: 46rem;
+  height: 30rem;
+  left: -12rem;
+  top: -10rem;
+  background: #ff6b4a;
+  animation: driftA 22s ease-in-out infinite alternate;
+}
+.blobB {
+  width: 38rem;
+  height: 28rem;
+  right: -10rem;
+  top: 6rem;
+  background: #60a5fa;
+  animation: driftB 26s ease-in-out infinite alternate;
+}
+.blobC {
+  width: 32rem;
+  height: 24rem;
+  left: 30%;
+  bottom: -14rem;
+  background: #a78bfa;
+  animation: driftC 30s ease-in-out infinite alternate;
+}
+.blobD {
+  width: 26rem;
+  height: 22rem;
+  left: 38%;
+  top: -8rem;
+  background: #ffb020;
+  opacity: 0.22;
+  animation: driftB 24s ease-in-out infinite alternate-reverse;
+}
+.blobE {
+  width: 30rem;
+  height: 24rem;
+  left: -6rem;
+  bottom: -10rem;
+  background: #f472b6;
+  opacity: 0.25;
+  animation: driftA 28s ease-in-out infinite alternate-reverse;
+}
+@keyframes driftA {
+  to {
+    transform: translate(18rem, 8rem) scale(1.15);
+  }
+}
+@keyframes driftB {
+  to {
+    transform: translate(-16rem, 10rem) scale(0.9);
+  }
+}
+@keyframes driftC {
+  to {
+    transform: translate(-10rem, -12rem) scale(1.2);
+  }
+}
+
+/* A faint grid that fades out toward the edges: graph paper, for a math product. */
+.grid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(to right, color-mix(in srgb, var(--ink) 6%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--ink) 6%, transparent) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(70% 60% at 50% 35%, black, transparent);
+}
+
+/* Outer span: pointer parallax (depth via --d). Inner span: a slow float. */
+.glyph {
+  position: absolute;
+  pointer-events: none;
+  transform: translate3d(calc(var(--px, 0) * var(--d) * 1px), calc(var(--py, 0) * var(--d) * 1px), 0);
+  transition: transform 600ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.glyph > span {
+  display: inline-block;
+  font-family: var(--font-display);
+  opacity: 0.55;
+  white-space: nowrap;
+  animation: float 9s ease-in-out infinite alternate;
+}
+@keyframes float {
+  from {
+    transform: translateY(-10px) rotate(-3deg);
+  }
+  to {
+    transform: translateY(12px) rotate(3deg);
+  }
+}
+
+/* The product frame leans toward the pointer. */
+.tilt {
+  perspective: 1400px;
+}
+.tilt > * {
+  transform: rotateY(calc(var(--px, 0) * 0.35deg)) rotateX(calc(var(--py, 0) * -0.35deg));
+  transition: transform 700ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  transform-style: preserve-3d;
+}
+.halo {
+  position: absolute;
+  inset: -2rem;
+  border-radius: 2.5rem;
+  background: conic-gradient(
+    from 0deg,
+    rgba(255, 107, 74, 0.3),
+    rgba(96, 165, 250, 0.3),
+    rgba(167, 139, 250, 0.3),
+    rgba(244, 114, 182, 0.3),
+    rgba(255, 107, 74, 0.3)
+  );
+  filter: blur(20px);
+  animation: breathe 6s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes breathe {
+  50% {
+    opacity: 0.55;
+    transform: scale(0.96);
+  }
+}
+
+/* Headline words rise in one after another. */
+.word {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(0.4em);
+  filter: blur(8px);
+  animation: rise 900ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+@keyframes rise {
+  to {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+/* "learned." in a slowly shifting gradient of every subject colour. */
+.rainbow {
+  background: linear-gradient(90deg, #ff6b4a, #ffb020, #fde047, #3ccf7f, #60a5fa, #a78bfa, #f472b6, #ff6b4a) 0 0 / 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  padding-right: 0.08em;
+  animation:
+    rise 900ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards,
+    shimmer 8s linear infinite;
+}
+@keyframes shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+/* The main button gets a soft multicolour glow. */
+.glowButton {
+  position: relative;
+  isolation: isolate;
+}
+.glowButton::before {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  z-index: -1;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #ff6b4a, #ffb020, #60a5fa, #a78bfa, #f472b6);
+  filter: blur(14px);
+  opacity: 0.7;
+  transition:
+    opacity 300ms ease,
+    filter 300ms ease;
+}
+.glowButton:hover::before {
+  opacity: 1;
+  filter: blur(20px);
+}
+
+/* The hand-drawn stroke under "learned." */
+.underline path {
+  stroke-dasharray: 400;
+  stroke-dashoffset: 400;
+  animation: draw 1100ms 1100ms cubic-bezier(0.6, 0, 0.2, 1) forwards;
+}
+@keyframes draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+.fadeUp {
+  opacity: 0;
+  animation: rise 900ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+/* ---------- Topic marquee ---------- */
+.marquee {
+  display: flex;
+  overflow: hidden;
+  mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+}
+.marqueeTrack {
+  display: flex;
+  flex-shrink: 0;
+  gap: 0.75rem;
+  padding-right: 0.75rem;
+  animation: marquee 45s linear infinite;
+}
+.marqueeReverse .marqueeTrack {
+  animation-direction: reverse;
+  animation-duration: 55s;
+}
+.marquee:hover .marqueeTrack {
+  animation-play-state: paused;
+}
+@keyframes marquee {
+  to {
+    transform: translateX(-100%);
+  }
+}
+
+/* Reduced motion: no drifting or looping at all, and everything shown in its final state. */
+@media (prefers-reduced-motion: reduce) {
+  .blob,
+  .rainbow,
+  .glyph > span,
+  .halo,
+  .marqueeTrack {
+    animation: none !important;
+  }
+  .word,
+  .fadeUp {
+    animation: none !important;
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+  .underline path {
+    animation: none !important;
+    stroke-dashoffset: 0;
+  }
+  .glyph,
+  .tilt > * {
+    transform: none;
+  }
+}

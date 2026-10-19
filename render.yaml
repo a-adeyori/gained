@@ -1,0 +1,106 @@
+# Gained on Render: web service (Next.js), workflow service (post-session pipeline and every
+# capture), cron job (retention quizzes and settlement), Postgres and Key Value.
+# Secrets marked `sync: false` are entered in the Render dashboard when the Blueprint is created.
+
+databases:
+  - name: gained-db
+    databaseName: gained
+    plan: basic-256mb
+    region: oregon
+
+services:
+  - type: web
+    name: gained-web
+    runtime: node
+    region: oregon
+    plan: starter
+    buildCommand: npm ci && npm run build
+    preDeployCommand: npm run db:migrate
+    startCommand: npm start
+    healthCheckPath: /
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: gained-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: gained-kv
+          property: connectionString
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: RENDER_WORKFLOW_SLUG
+        value: gained-workflow
+      - key: RENDER_API_KEY
+        sync: false
+      - key: PAYPAL_CLIENT_ID
+        sync: false
+      - key: PAYPAL_SECRET
+        sync: false
+      - key: NEXT_PUBLIC_PAYPAL_CLIENT_ID
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: AG_STUDIO
+        sync: false
+
+  # The post-session pipeline. Task names match lib/jobs.ts; compute plans are set per task.
+  - type: workflow
+    name: gained-workflow
+    runtime: node
+    region: oregon
+    buildCommand: npm ci
+    startCommand: npm run workflow
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: gained-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: gained-kv
+          property: connectionString
+      - key: PAYPAL_CLIENT_ID
+        sync: false
+      - key: PAYPAL_SECRET
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+
+  # Every 15 minutes: send due retention quizzes, auto-confirm sessions, trigger settlement.
+  - type: cron
+    name: gained-cron
+    runtime: node
+    region: oregon
+    plan: starter
+    schedule: "*/15 * * * *"
+    buildCommand: npm ci
+    startCommand: npm run cron
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: gained-db
+          property: connectionString
+      - key: RENDER_WORKFLOW_SLUG
+        value: gained-workflow
+      - key: RENDER_API_KEY
+        sync: false
+
+  # Holds session audio and photos for at most an hour. noeviction so memory pressure fails
+  # an upload loudly instead of silently dropping a recording.
+  - type: keyvalue
+    name: gained-kv
+    plan: starter
+    region: oregon
+    maxmemoryPolicy: noeviction
+    ipAllowList: []

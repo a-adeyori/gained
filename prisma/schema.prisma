@@ -1,0 +1,219 @@
+// Gained data model. Column names match the PRD's data model table.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  parent
+  student
+  tutor
+  admin
+}
+
+enum EscrowState {
+  held
+  base_paid
+  awaiting_retention
+  settled
+  returned
+  in_appeal
+}
+
+enum QuizKind {
+  baseline
+  post
+  retention
+}
+
+model User {
+  id            String   @id @default(cuid())
+  role          Role
+  name          String
+  email         String   @unique
+  password_hash String?
+  paypal_email  String?
+  is_minor      Boolean  @default(false)
+  // Students a parent added; an adult student is their own payer and has no parent.
+  parent_id     String?
+  // A student who added a parent's email before that parent had an account. The parent is
+  // linked automatically when they sign up or sign in with it (lib/family.ts).
+  invited_parent_email String?
+  // Tutor profile.
+  bio           String?
+  subjects      String[]
+  price_cents   Int?
+
+  parent       User?          @relation("family", fields: [parent_id], references: [id])
+  children     User[]         @relation("family")
+  tutoring     Session[]      @relation("tutor")
+  learning     Session[]      @relation("student")
+  paying       Session[]      @relation("payer")
+  availability Availability[]
+  daily        DailyAttempt[]
+
+  @@map("users")
+}
+
+// status: booked -> live -> ended (tutor tapped End) -> topics_confirmed -> complete
+// (both sides confirmed) -> settled. "cancelled" if the hold is never approved.
+model Session {
+  id                  String    @id @default(cuid())
+  tutor_id            String
+  student_id          String
+  payer_id            String
+  start_at            DateTime
+  end_at              DateTime
+  ended_at            DateTime?
+  price_cents         Int
+  subject             String
+  consent_recording   Boolean   @default(false)
+  status              String    @default("booked")
+  // What the tutor plans to cover, entered at booking; the baseline is written from it.
+  planned_topics      String
+  // Fallback when recording is declined or fails: the tutor's 3-5 bullet points.
+  notes               String?
+  // Deleted once the retention quiz is graded.
+  transcript          String?
+  // Topic list from the AI; `topics_confirmed_at` is set when the tutor confirms or edits it.
+  topics_json         Json?
+  topics_confirmed_at DateTime?
+  pipeline_error      String?
+  // The PayPal order, kept here until the parent approves it and the escrow row is created.
+  paypal_order_id     String?   @unique
+  tutor_confirmed_at  DateTime?
+  family_confirmed_at DateTime?
+  // Demo data from scripts/seed.ts. Never counted in public pilot results.
+  is_seed             Boolean   @default(false)
+  created_at          DateTime  @default(now())
+
+  tutor   User     @relation("tutor", fields: [tutor_id], references: [id])
+  student User     @relation("student", fields: [student_id], references: [id])
+  payer   User     @relation("payer", fields: [payer_id], references: [id])
+  escrow  Escrow?
+  quizzes Quiz[]
+  result  Result?
+  appeals Appeal[]
+
+  @@map("sessions")
+}
+
+model Escrow {
+  session_id       String      @id
+  order_id         String
+  authorization_id String
+  // When the current authorization was placed; reset when it is reauthorized.
+  authorized_at    DateTime
+  // Set once a reauthorization succeeds. A session is never reauthorized twice.
+  reauthorized     Boolean     @default(false)
+  state            EscrowState @default(held)
+  base_capture_id  String?
+  bonus_capture_id String?
+  base_payout_id   String?
+  bonus_payout_id  String?
+  returned_cents   Int?
+
+  session Session @relation(fields: [session_id], references: [id])
+
+  @@map("escrows")
+}
+
+model Quiz {
+  id             String    @id @default(cuid())
+  session_id     String
+  kind           QuizKind
+  questions_json Json
+  sent_at        DateTime?
+  // Retention quizzes close 12 hours after they are sent.
+  closes_at      DateTime?
+  completed_at   DateTime?
+  // The student's submitted answers, by question index, until grading writes them to answers.
+  responses_json Json?
+  // 0-100, set when graded.
+  score          Float?
+
+  session Session  @relation(fields: [session_id], references: [id])
+  answers Answer[]
+
+  @@unique([session_id, kind])
+  @@map("quizzes")
+}
+
+model Answer {
+  quiz_id        String
+  question_index Int
+  answer         String
+  score          Float?
+  rationale      String?
+
+  quiz Quiz @relation(fields: [quiz_id], references: [id])
+
+  @@id([quiz_id, question_index])
+  @@map("answers")
+}
+
+model Result {
+  session_id               String  @id
+  // Null when the student skipped the baseline; both gains then use the tutor's average.
+  pre_score                Float?
+  post_score               Float?
+  retention_score          Float?
+  gain_quiz                Float?
+  gain_retention           Float?
+  tutor_pay_cents          Int?
+  // The one-paragraph AI rationale shown under the scores.
+  rationale                String?
+  // Set by an admin resolving an appeal: total tutor pay to capture at settlement.
+  override_tutor_pay_cents Int?
+
+  session Session @relation(fields: [session_id], references: [id])
+
+  @@map("results")
+}
+
+model Appeal {
+  id          String    @id @default(cuid())
+  session_id  String
+  opened_by   String
+  reason      String
+  // open -> upheld (grade stands) or adjusted (admin overrode the capture)
+  status      String    @default("open")
+  resolution  String?
+  created_at  DateTime  @default(now())
+  resolved_at DateTime?
+
+  session Session @relation(fields: [session_id], references: [id])
+
+  @@map("appeals")
+}
+
+model Availability {
+  id       String   @id @default(cuid())
+  tutor_id String
+  start_at DateTime
+  end_at   DateTime
+
+  tutor User @relation(fields: [tutor_id], references: [id])
+
+  @@index([tutor_id, start_at])
+  @@map("availability")
+}
+
+// One row per student per day of the problem of the day. `day` is the student's local date
+// (YYYY-MM-DD); the streak is worked out from the days with `solved_at` set (lib/daily.ts).
+model DailyAttempt {
+  user_id   String
+  day       String
+  picks     Int[]
+  solved_at DateTime?
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@id([user_id, day])
+  @@map("daily_attempts")
+}

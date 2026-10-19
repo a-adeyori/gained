@@ -1,40 +1,31 @@
-import Link from 'next/link';
+// Public landing page: hero, subjects, how it works, an optional pilot voice clip and the closing
+// call to action. Few words, lots of motion. The daily problem lives on the student home.
 
-const dashboard = { href: '/dashboard', label: 'Dashboard', detail: 'AG Studio reports over all of the data below' };
+import type { Metadata } from 'next';
+import { FinalCta, SiteFooter } from '@/components/landing/final-cta';
+import { Hero, SiteHeader } from '@/components/landing/hero';
+import { HowItWorks } from '@/components/landing/how-it-works';
+import { SubjectBento } from '@/components/landing/subject-bento';
+import { VoiceClip } from '@/components/landing/voice-clip';
 
-// One page per PayPal endpoint the demo calls, each in app/(endpoints).
-const endpoints = [
-  { href: '/products', label: 'Catalog products', detail: 'GET /v1/catalogs/products' },
-  { href: '/plans', label: 'Billing plans', detail: 'GET /v1/billing/plans' },
-  { href: '/invoices', label: 'Invoices', detail: 'GET /v2/invoicing/invoices' },
-  { href: '/transactions', label: 'Transactions', detail: 'GET /v1/reporting/transactions' },
-  { href: '/balances', label: 'Balances', detail: 'GET /v1/reporting/balances' },
-];
+export const metadata: Metadata = {
+  title: { absolute: 'Gained · Pay for what they learned' },
+  description:
+    'Tutoring in any subject where your payment is held through PayPal until a short quiz shows real progress. What isn’t earned comes back to you.',
+};
 
-function PageLink({ href, label, detail }: { href: string; label: string; detail: string }) {
+export default function LandingPage() {
   return (
-    <li>
-      <Link href={href} className="flex items-baseline justify-between gap-4 py-3 hover:text-pp-blue">
-        <span className="font-semibold">{label} →</span>
-        <code className="text-sm text-pp-muted">{detail}</code>
-      </Link>
-    </li>
-  );
-}
-
-export default function Home() {
-  return (
-    <main className="mx-auto w-full max-w-3xl p-16 font-paypal text-pp-ink">
-      <h1 className="text-[28px] font-semibold text-pp-navy">PayPal REST APIs with AG Grid &amp; AG Studio</h1>
-      <ul className="mt-6 divide-y divide-pp-border border-y border-pp-border">
-        <PageLink {...dashboard} />
-      </ul>
-      <h2 className="mt-10 text-sm font-semibold uppercase tracking-wider text-pp-muted">Endpoints</h2>
-      <ul className="mt-2 divide-y divide-pp-border border-y border-pp-border">
-        {endpoints.map((page) => (
-          <PageLink key={page.href} {...page} />
-        ))}
-      </ul>
-    </main>
+    <div className="flex-1 overflow-x-clip">
+      <SiteHeader />
+      <main>
+        <Hero />
+        <SubjectBento />
+        <HowItWorks />
+        <VoiceClip />
+        <FinalCta />
+      </main>
+      <SiteFooter />
+    </div>
   );
 }

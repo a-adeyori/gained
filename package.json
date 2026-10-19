@@ -1,30 +1,57 @@
 {
-  "name": "ag-paypal-demo",
+  "name": "gained",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "tsx --test tests/*.test.ts",
+    "postinstall": "prisma generate && node scripts/bryntum-dark-theme.mjs",
+    "db:migrate": "prisma migrate deploy",
+    "db:migrate:dev": "prisma migrate dev",
+    "seed": "tsx scripts/seed.ts",
+    "workflow": "tsx workflow/index.ts",
+    "cron": "tsx scripts/cron.ts",
+    "money-loop": "tsx --env-file=.env.local scripts/money-loop.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.135.0",
+    "@bryntum/scheduler": "npm:@bryntum/scheduler-trial@^7.3.7",
+    "@bryntum/scheduler-react": "^7.3.7",
+    "@paypal/react-paypal-js": "^10.6.0",
+    "@prisma/adapter-pg": "^7.10.1",
+    "@prisma/client": "^7.10.1",
+    "@renderinc/sdk": "^1.2.0",
     "ag-grid-community": "36.2.0",
     "ag-grid-react": "36.2.0",
     "ag-studio": "3.0.0",
     "ag-studio-react": "3.0.0",
+    "katex": "^0.16.22",
     "next": "16.3.6",
+    "openai": "^7.34.0",
+    "pg": "^8.23.1",
+    "prisma": "^7.10.1",
     "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react-dom": "19.2.8",
+    "redis": "^6.3.0",
+    "tsx": "^4.20.6",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/katex": "^0.16.8",
     "@types/node": "^20",
+    "@types/pg": "^8.23.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.3.6",
     "tailwindcss": "^4",
     "typescript": "^5"
+  },
+  "engines": {
+    "node": ">=20.9"
   }
 }

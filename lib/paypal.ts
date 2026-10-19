@@ -1,6 +1,7 @@
-// PayPal REST client: every call this demo makes to PayPal goes through here. It covers
-// catalog products, billing plans, invoicing, Transaction Search and balances, with plain
-// fetch and no SDK. Server-side only: it reads the client secret from the environment.
+// PayPal REST client: every call Gained makes to PayPal goes through here. It covers the
+// escrow loop (authorize, capture, void, reauthorize), tutor payouts, and the catalog,
+// invoicing, Transaction Search and balance reads the dashboard uses, with plain fetch and
+// no SDK. Server-side only: it reads the client secret from the environment.
 
 const BASE_URL = 'https://api-m.sandbox.paypal.com';
 const MAX_ATTEMPTS = 4;
@@ -41,13 +42,26 @@ async function accessToken(): Promise<string> {
   return access_token;
 }
 
-async function get<T>(path: string): Promise<T> {
+// `requestId` is sent as PayPal-Request-Id, so retrying a POST (here or in a workflow task)
+// returns the original result instead of moving money twice.
+async function request<T>(method: 'GET' | 'POST', path: string, body?: unknown, requestId?: string): Promise<T> {
   for (let attempt = 1; ; attempt++) {
     const res = await fetch(`${BASE_URL}${path}`, {
-      headers: { Authorization: `Bearer ${await accessToken()}` },
+      method,
+      headers: {
+        Authorization: `Bearer ${await accessToken()}`,
+        ...(body === undefined ? {} : { 'Content-Type': 'application/json' }),
+        ...(requestId ? { 'PayPal-Request-Id': requestId } : {}),
+        Prefer: 'return=representation',
+      },
+      body: body === undefined ? undefined : JSON.stringify(body),
       cache: 'no-store',
     });
-    if (res.ok) return (await res.json()) as T;
+    if (res.ok) {
+      // Void returns 204 with no body.
+      const text = await res.text();
+      return (text ? JSON.parse(text) : undefined) as T;
+    }
 
     // A revoked or expired token: drop it and mint a new one once.
     if (res.status === 401 && attempt === 1) {
@@ -62,162 +76,241 @@ async function get<T>(path: string): Promise<T> {
   }
 }
 
-// `path` must already carry whatever flag makes the endpoint report `total_pages`.
-async function listAll<T>(path: string, key: string, pageSize: number): Promise<T[]> {
-  const items: T[] = [];
-  const sep = path.includes('?') ? '&' : '?';
-  for (let page = 1; ; page++) {
-    const res = await get<{ total_pages?: number } & Record<string, unknown>>(
-      `${path}${sep}page_size=${pageSize}&page=${page}`,
-    );
-    items.push(...((res[key] as T[] | undefined) ?? []));
-    if (page >= (res.total_pages ?? 1)) return items;
-  }
-}
+const get = <T>(path: string) => request<T>('GET', path);
 
 export type Money = { value: string; currency_code: string };
 
-// PayPal sends amounts as decimal strings; missing amounts count as 0.
-export const amountOf = (m?: Money | null) => (m?.value === undefined ? 0 : Number(m.value));
+// --- Escrow: authorize at booking, capture what was earned, release the rest -------
+// Partial captures must be enabled on the PayPal business account, or the second capture fails.
 
-// --- Catalog products & billing plans ------------------------------------------
+export type AuthorizationStatus =
+  | 'CREATED'
+  | 'CAPTURED'
+  | 'PARTIALLY_CAPTURED'
+  | 'DENIED'
+  | 'EXPIRED'
+  | 'PENDING'
+  | 'VOIDED';
 
-export type Product = {
+export type Authorization = {
   id: string;
-  name: string;
-  description?: string;
-  type?: 'PHYSICAL' | 'DIGITAL' | 'SERVICE';
-  category?: string;
-  create_time: string;
+  status: AuthorizationStatus;
+  amount: Money;
+  create_time?: string;
+  expiration_time?: string;
 };
 
-export type IntervalUnit = 'DAY' | 'WEEK' | 'MONTH' | 'YEAR';
-
-export type BillingCycle = {
-  frequency: { interval_unit: IntervalUnit; interval_count: number };
-  tenure_type: 'REGULAR' | 'TRIAL';
-  sequence: number;
-  total_cycles: number;
-  pricing_scheme?: { fixed_price?: Money };
-};
-
-export type Plan = {
+export type Capture = {
   id: string;
-  product_id: string;
-  name: string;
-  status: 'CREATED' | 'INACTIVE' | 'ACTIVE';
-  create_time: string;
-  billing_cycles: BillingCycle[];
-  payment_preferences?: { setup_fee?: Money };
+  status: 'COMPLETED' | 'DECLINED' | 'PARTIALLY_REFUNDED' | 'PENDING' | 'REFUNDED' | 'FAILED';
+  amount: Money;
+  final_capture?: boolean;
 };
 
-// The list endpoints return summaries (no product type/category, no billing cycles),
-// so each record is fetched in full.
-export async function listProducts(): Promise<Product[]> {
-  const summaries = await listAll<{ id: string }>('/v1/catalogs/products?total_required=true', 'products', 20);
-  return Promise.all(summaries.map((p) => get<Product>(`/v1/catalogs/products/${encodeURIComponent(p.id)}`)));
+type Link = { href: string; rel: string };
+
+export type Order = {
+  id: string;
+  status: 'CREATED' | 'SAVED' | 'APPROVED' | 'VOIDED' | 'COMPLETED' | 'PAYER_ACTION_REQUIRED';
+  links?: Link[];
+  purchase_units?: { payments?: { authorizations?: Authorization[] } }[];
+};
+
+const usd = (cents: number): Money => ({ currency_code: 'USD', value: (cents / 100).toFixed(2) });
+
+/** Booking: an order that holds the full price once the parent approves it. */
+export async function createAuthorizeOrder(opts: {
+  sessionId: string;
+  priceCents: number;
+  description: string;
+  /** Only for redirect checkout; the in-page PayPal button doesn't need them. */
+  returnUrl?: string;
+  cancelUrl?: string;
+}): Promise<{ orderId: string; approveUrl: string | undefined }> {
+  const order = await request<Order>(
+    'POST',
+    '/v2/checkout/orders',
+    {
+      intent: 'AUTHORIZE',
+      purchase_units: [
+        {
+          reference_id: opts.sessionId,
+          custom_id: opts.sessionId,
+          description: opts.description,
+          amount: usd(opts.priceCents),
+        },
+      ],
+      payment_source: {
+        paypal: {
+          experience_context: {
+            brand_name: 'Gained',
+            shipping_preference: 'NO_SHIPPING',
+            user_action: 'CONTINUE',
+            ...(opts.returnUrl ? { return_url: opts.returnUrl, cancel_url: opts.cancelUrl } : {}),
+          },
+        },
+      },
+    },
+    `session-${opts.sessionId}-order`,
+  );
+  const approveUrl = order.links?.find((l) => l.rel === 'payer-action' || l.rel === 'approve')?.href;
+  return { orderId: order.id, approveUrl };
 }
 
-export async function listPlans(): Promise<Plan[]> {
-  const summaries = await listAll<{ id: string }>('/v1/billing/plans?total_required=true', 'plans', 20);
-  return Promise.all(summaries.map((p) => get<Plan>(`/v1/billing/plans/${encodeURIComponent(p.id)}`)));
+export function getOrder(orderId: string): Promise<Order> {
+  return get<Order>(`/v2/checkout/orders/${encodeURIComponent(orderId)}`);
 }
 
-// --- Invoicing -------------------------------------------------------------------
-
-export type InvoiceStatus =
-  | 'DRAFT'
-  | 'SENT'
-  | 'SCHEDULED'
-  | 'UNPAID'
-  | 'PAYMENT_PENDING'
-  | 'PAID'
-  | 'MARKED_AS_PAID'
-  | 'PARTIALLY_PAID'
-  | 'REFUNDED'
-  | 'PARTIALLY_REFUNDED'
-  | 'MARKED_AS_REFUNDED'
-  | 'CANCELLED';
-
-export type Invoice = {
-  id: string;
-  status: InvoiceStatus;
-  detail: {
-    invoice_number: string;
-    currency_code: string;
-    invoice_date?: string;
-    payment_term?: { term_type?: string; due_date?: string };
-  };
-  primary_recipients?: {
-    billing_info?: {
-      name?: { full_name?: string };
-      business_name?: string;
-      email_address?: string;
-    };
-  }[];
-  items?: {
-    id?: string;
-    name: string;
-    quantity: string;
-    unit_amount: Money;
-    unit_of_measure?: string;
-    tax?: { percent?: string; amount?: Money };
-    discount?: { percent?: string; amount?: Money };
-  }[];
-  amount?: Money & { breakdown?: { tax_total?: Money; shipping?: { amount?: Money } } };
-  due_amount?: Money;
-  payments?: {
-    paid_amount?: Money;
-    transactions?: { payment_id?: string; payment_date?: string; method?: string; amount: Money }[];
-  };
-  refunds?: {
-    refund_amount?: Money;
-    transactions?: { recipient_transaction_id?: string; refund_date?: string; method?: string; amount: Money }[];
-  };
-};
-
-// The list omits line items, payments and refunds; the detail endpoint has them.
-export async function listInvoices(): Promise<Invoice[]> {
-  const summaries = await listAll<{ id: string }>('/v2/invoicing/invoices?total_required=true', 'items', 100);
-  return Promise.all(summaries.map((i) => get<Invoice>(`/v2/invoicing/invoices/${encodeURIComponent(i.id)}`)));
+/** After the parent approves: place the hold and return its authorization. */
+export async function authorizeOrder(orderId: string): Promise<Authorization> {
+  const order = await request<Order>(
+    'POST',
+    `/v2/checkout/orders/${encodeURIComponent(orderId)}/authorize`,
+    {},
+    `order-${orderId}-authorize`,
+  );
+  const auth = order.purchase_units?.[0]?.payments?.authorizations?.[0];
+  if (!auth) throw new Error(`Order ${orderId} authorized but returned no authorization`);
+  return auth;
 }
 
-// --- Transaction Search & balances -------------------------------------------------
+export function getAuthorization(authorizationId: string): Promise<Authorization> {
+  return get<Authorization>(`/v2/payments/authorizations/${encodeURIComponent(authorizationId)}`);
+}
 
-export type Transaction = {
-  transaction_info: {
-    transaction_id: string;
-    paypal_reference_id?: string;
-    transaction_event_code?: string;
-    transaction_initiation_date?: string;
-    transaction_amount?: Money;
-    fee_amount?: Money;
-    transaction_status?: string;
-    ending_balance?: Money;
-    transaction_subject?: string;
-    transaction_note?: string;
-    custom_field?: string;
-  };
-  payer_info?: { email_address?: string };
-};
-
-// Transaction Search allows ranges of at most 31 days and rejects fractional seconds.
-export const TRANSACTION_SEARCH_MAX_DAYS = 31;
-
-export function searchTransactions(start: Date, end: Date): Promise<Transaction[]> {
-  const iso = (d: Date) => `${d.toISOString().slice(0, 19)}Z`;
-  return listAll<Transaction>(
-    `/v1/reporting/transactions?start_date=${iso(start)}&end_date=${iso(end)}&fields=all`,
-    'transaction_details',
-    500,
+// Not exported: every capture goes through captureEscrow, so the freshness check can't be skipped.
+function captureAuthorization(
+  authorizationId: string,
+  opts: { amountCents: number; finalCapture: boolean; key: string; noteToPayer?: string },
+): Promise<Capture> {
+  return request<Capture>(
+    'POST',
+    `/v2/payments/authorizations/${encodeURIComponent(authorizationId)}/capture`,
+    {
+      amount: usd(opts.amountCents),
+      final_capture: opts.finalCapture,
+      invoice_id: opts.key,
+      ...(opts.noteToPayer ? { note_to_payer: opts.noteToPayer } : {}),
+    },
+    opts.key,
   );
 }
 
-export type Balances = {
-  as_of_time?: string;
-  balances?: { currency: string; total_balance?: Money; available_balance?: Money; withheld_balance?: Money }[];
+/** Release the uncaptured remainder of a hold (or all of it) back to the payer. */
+export async function voidAuthorization(authorizationId: string, key: string): Promise<void> {
+  await request<void>('POST', `/v2/payments/authorizations/${encodeURIComponent(authorizationId)}/void`, undefined, key);
+}
+
+/** Renew a hold past its honor period. Later captures must use the returned new ID. */
+export function reauthorize(authorizationId: string, amountCents: number, key: string): Promise<Authorization> {
+  return request<Authorization>(
+    'POST',
+    `/v2/payments/authorizations/${encodeURIComponent(authorizationId)}/reauthorize`,
+    { amount: usd(amountCents) },
+    key,
+  );
+}
+
+// --- Escrow captures: refresh an aging hold once, then capture -----------------------
+
+/** A hold older than this (PayPal's 3-day honor period) is reauthorized before capturing. */
+export const REAUTHORIZE_AFTER_HOURS = 72;
+
+/** The escrow fields the capture path reads and updates (a subset of the escrows row). */
+export type EscrowAuth = {
+  session_id: string;
+  authorization_id: string;
+  authorized_at: Date;
+  reauthorized: boolean;
 };
 
-export function getBalances(): Promise<Balances> {
-  return get<Balances>('/v1/reporting/balances');
+export type EscrowAuthPatch = Pick<EscrowAuth, 'authorization_id' | 'authorized_at' | 'reauthorized'>;
+
+/**
+ * Reauthorize the hold if it is more than 72 hours old and hasn't been reauthorized yet;
+ * otherwise do nothing. A session is reauthorized at most once. On success the new
+ * authorization ID is persisted through `save` before anything captures against it. On
+ * failure the error is logged and the original escrow is returned, so the capture still runs.
+ *
+ * `holdCents` is the uncaptured amount the hold must still cover (the full price before the
+ * base capture, the remainder after it).
+ */
+export async function ensureFreshAuthorization<E extends EscrowAuth>(
+  escrow: E,
+  opts: { holdCents: number; save: (patch: EscrowAuthPatch) => Promise<void>; now?: Date },
+): Promise<E> {
+  const now = opts.now ?? new Date();
+  const ageHours = (now.getTime() - escrow.authorized_at.getTime()) / 3_600_000;
+  if (ageHours <= REAUTHORIZE_AFTER_HOURS || escrow.reauthorized) return escrow;
+
+  let fresh: Authorization;
+  try {
+    fresh = await reauthorize(escrow.authorization_id, opts.holdCents, `session-${escrow.session_id}-reauthorize`);
+  } catch (err) {
+    console.error(`Reauthorization failed for session ${escrow.session_id}; capturing on the original hold.`, err);
+    return escrow;
+  }
+  const patch: EscrowAuthPatch = { authorization_id: fresh.id, authorized_at: now, reauthorized: true };
+  await opts.save(patch);
+  return { ...escrow, ...patch };
+}
+
+/**
+ * Capture part of an escrow's hold, reauthorizing it first if needed. `finalCapture: true`
+ * releases whatever is left back to the payer. `key` names the step (e.g. `session-42-base`)
+ * and doubles as the idempotency key. Returns the escrow as it stands after any reauthorization.
+ */
+export async function captureEscrow<E extends EscrowAuth>(
+  escrow: E,
+  opts: {
+    amountCents: number;
+    finalCapture: boolean;
+    key: string;
+    holdCents: number;
+    save: (patch: EscrowAuthPatch) => Promise<void>;
+    noteToPayer?: string;
+    now?: Date;
+  },
+): Promise<{ escrow: E; capture: Capture }> {
+  const current = await ensureFreshAuthorization(escrow, opts);
+  const capture = await captureAuthorization(current.authorization_id, opts);
+  return { escrow: current, capture };
+}
+
+// --- Payouts -----------------------------------------------------------------------
+
+export type PayoutBatch = {
+  batch_header: { payout_batch_id: string; batch_status: string; sender_batch_header: { sender_batch_id: string } };
+};
+
+/**
+ * Pay a tutor. `senderBatchId` must be unique per payout (`session-{id}-base`,
+ * `session-{id}-bonus`): PayPal rejects a reused ID for 30 days, so a tutor is never paid twice.
+ */
+export function createPayout(opts: {
+  senderBatchId: string;
+  receiverEmail: string;
+  amountCents: number;
+  note: string;
+}): Promise<PayoutBatch> {
+  return request<PayoutBatch>(
+    'POST',
+    '/v1/payments/payouts',
+    {
+      sender_batch_header: {
+        sender_batch_id: opts.senderBatchId,
+        email_subject: 'You have a payout from Gained',
+      },
+      items: [
+        {
+          recipient_type: 'EMAIL',
+          receiver: opts.receiverEmail,
+          amount: { value: (opts.amountCents / 100).toFixed(2), currency: 'USD' },
+          note: opts.note,
+          sender_item_id: opts.senderBatchId,
+        },
+      ],
+    },
+    opts.senderBatchId,
+  );
 }
