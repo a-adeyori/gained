@@ -79,7 +79,7 @@ export function useRecorder(uploadUrl: string) {
     };
     recorder.onerror = () => {
       setState('failed');
-      setError('Recording stopped unexpectedly. Add bullet notes instead.');
+      setError('Recording stopped unexpectedly.');
     };
     // A timeslice keeps data flowing so a crash loses at most a few seconds.
     recorder.start(10_000);
@@ -95,7 +95,7 @@ export function useRecorder(uploadUrl: string) {
     setError(null);
     if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
       setState('failed');
-      setError('This browser can’t record audio. Add bullet notes instead.');
+      setError('This browser can’t record audio. Try Chrome or Safari.');
       return;
     }
     setState('requesting');
@@ -105,7 +105,7 @@ export function useRecorder(uploadUrl: string) {
       });
     } catch {
       setState('failed');
-      setError('Microphone access was blocked. Add bullet notes instead.');
+      setError('Microphone access was blocked. Allow it in your browser settings.');
       return;
     }
     stoppingRef.current = false;

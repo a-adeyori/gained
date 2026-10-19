@@ -24,7 +24,6 @@ export default async function LivePage({ params }: PageProps<'/sessions/[id]/liv
       subject={session.subject}
       plannedTopics={session.planned_topics}
       startAt={session.start_at.toISOString()}
-      consentRecording={session.consent_recording}
       initialStage={session.status === 'booked' || session.status === 'live' ? 'before' : 'processing'}
       initialTopics={topics?.success ? topics.data : null}
     />

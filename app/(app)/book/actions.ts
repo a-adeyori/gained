@@ -58,7 +58,8 @@ const Booking = z.object({
   durationMin: z.coerce.number().int(),
   subject: z.string({ error: 'Pick a subject.' }),
   plannedTopics: z.string().max(MAX_TOPICS_LENGTH * 2),
-  consent: z.literal('on').optional(),
+  // Recording is how the quiz is written, so it's required. Audio is deleted once transcribed.
+  consent: z.literal('on', { error: 'Agree to the recording to book. The audio is deleted as soon as it’s transcribed.' }),
 });
 
 export async function bookSession(_prev: BookState, form: FormData): Promise<BookState> {
@@ -99,7 +100,7 @@ export async function bookSession(_prev: BookState, form: FormData): Promise<Boo
             price_cents: check.priceCents,
             subject: input.subject,
             planned_topics: check.plannedTopics,
-            consent_recording: input.consent === 'on',
+            consent_recording: true,
             status: 'booked',
           },
         });

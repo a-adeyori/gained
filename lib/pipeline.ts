@@ -55,7 +55,7 @@ export async function transcribeAudioStep(sessionId: string) {
     for (const r of recordings) parts.push(await transcribe(r.data, r.mime));
     await db.session.update({ where: { id: sessionId }, data: { transcript: parts.join('\n\n') } });
   } catch (err) {
-    // Topics can still come from photos and the tutor's notes.
+    // Topics then come from what was planned at booking; the tutor reviews them.
     await recordError(sessionId, 'Transcription', err);
   } finally {
     // Audio is deleted right after transcription, whether or not it worked.

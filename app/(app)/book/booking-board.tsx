@@ -225,10 +225,10 @@ function BookingSheet({
 
   const consentCopy =
     student.id === me.id
-      ? 'I consent to this session being recorded for quiz generation; audio is deleted right after transcription.'
+      ? 'I agree to this session’s audio being recorded to write my quiz.'
       : student.isMinor
-        ? 'I’m the parent or guardian and I consent to this session being recorded for quiz generation; audio is deleted right after transcription.'
-        : `${student.name.split(' ')[0]} consents to this session being recorded for quiz generation; audio is deleted right after transcription.`;
+        ? 'I’m the parent or guardian and I agree to this session’s audio being recorded to write the quiz.'
+        : `${student.name.split(' ')[0]} agrees to this session’s audio being recorded to write the quiz.`;
 
   return (
     <div className="fixed inset-0 z-40" role="dialog" aria-modal="true" aria-labelledby={titleId}>
@@ -360,12 +360,13 @@ function BookingSheet({
 
               <div className="rounded-xl border border-line p-3.5">
                 <label className="flex items-start gap-3 text-sm">
-                  <input type="checkbox" name="consent" className="mt-1" />
+                  <input type="checkbox" name="consent" required className="mt-1" />
                   <span>{consentCopy}</span>
                 </label>
-                <p className="mt-2 pl-7 text-xs text-muted">
-                  Optional. Leave it unchecked to skip recording; the tutor uses photos and notes instead.
-                  {student.id !== me.id && !student.isMinor && ' Only check it if they’ve agreed. They also see a notice before recording starts.'}
+                <p className="mt-2 pl-7 text-xs leading-relaxed text-muted">
+                  Required: the quiz is written from what was actually said. As soon as the session ends, the audio is turned into a
+                  written transcript and the audio itself is <span className="font-medium text-ink-soft">deleted immediately</span>. No one
+                  listens to it, and only the transcript is used to write the quiz.
                 </p>
               </div>
 

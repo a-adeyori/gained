@@ -53,7 +53,7 @@ export default async function CheckoutPage({ params }: PageProps<'/sessions/[id]
           <dt className="text-muted">Covering</dt>
           <dd className="text-ink-soft">{session.planned_topics}</dd>
           <dt className="text-muted">Recording</dt>
-          <dd className="text-ink-soft">{session.consent_recording ? 'Yes, audio deleted after transcription' : 'No, photos and notes instead'}</dd>
+          <dd className="text-ink-soft">Audio only, deleted as soon as it’s transcribed</dd>
         </dl>
         <div className="mt-5 flex items-baseline justify-between border-t border-line pt-4">
           <span className="text-sm text-muted">Full price</span>

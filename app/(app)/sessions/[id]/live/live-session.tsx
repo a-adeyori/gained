@@ -1,11 +1,12 @@
 'use client';
 
-// PRD screen 4, for the tutor: start/stop recording, add photos of worked problems, fallback
-// bullet notes, end the session. After it ends, the one follow-up action: confirm the topics.
+// PRD screen 4, for the tutor: start the session (and its recording), end it, then the one
+// follow-up action: confirm the topics. The quiz comes from the transcript; if the microphone
+// fails, from the topics planned at booking, which the tutor reviews before confirming.
 
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Button, ButtonLink, Card, Field, inputClass, PageTitle } from '@/components/ui';
+import { Button, ButtonLink, Card, inputClass, PageTitle } from '@/components/ui';
 import type { TopicList } from '@/lib/claude';
 import { useRecorder } from './use-recorder';
 
@@ -18,7 +19,6 @@ type Props = {
   subject: string;
   plannedTopics: string;
   startAt: string;
-  consentRecording: boolean;
   initialStage: 'before' | 'processing';
   initialTopics: TopicList | null;
 };
@@ -42,38 +42,24 @@ async function post(url: string, body?: unknown) {
   return data;
 }
 
-/** Resize a photo to at most 1600px on its long side as JPEG, so uploads stay small. */
-async function shrink(file: File): Promise<Blob> {
-  const bitmap = await createImageBitmap(file);
-  const scale = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height));
-  const canvas = document.createElement('canvas');
-  canvas.width = Math.round(bitmap.width * scale);
-  canvas.height = Math.round(bitmap.height * scale);
-  canvas.getContext('2d')!.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-  return new Promise((resolve, reject) => canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('Could not read photo'))), 'image/jpeg', 0.82));
-}
-
 export function LiveSession(props: Props) {
   const { sessionId } = props;
   const [stage, setStage] = useState<Stage>(props.initialTopics ? 'topics' : props.initialStage);
-  const [notes, setNotes] = useState('');
-  const [photos, setPhotos] = useState(0);
-  const [photoBusy, setPhotoBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [topics, setTopics] = useState<TopicList | null>(props.initialTopics);
   const [quizPath, setQuizPath] = useState<string | null>(null);
   const [pipelineError, setPipelineError] = useState<string | null>(null);
   const recorder = useRecorder(`/api/sessions/${sessionId}/audio`);
 
-  // Bullets are required when there's no usable recording.
-  const needsNotes = !props.consentRecording || recorder.state === 'failed' || recorder.uploadFailed;
+  // If the microphone fails, the quiz falls back to the topics planned at booking.
+  const recordingProblem = recorder.state === 'failed' || recorder.uploadFailed;
 
   const begin = async () => {
     setError(null);
     try {
       await post(`/api/sessions/${sessionId}/start`);
       setStage('live');
-      if (props.consentRecording) await recorder.start();
+      await recorder.start();
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     }
@@ -81,41 +67,14 @@ export function LiveSession(props: Props) {
 
   const end = async () => {
     setError(null);
-    if (needsNotes && !notes.trim()) {
-      setError('Add 3–5 bullet points on what you covered, so the quiz matches the session.');
-      return;
-    }
     setStage('ending');
     try {
       await recorder.stop();
-      await post(`/api/sessions/${sessionId}/end`, { notes });
+      await post(`/api/sessions/${sessionId}/end`, {});
       setStage('processing');
     } catch (err) {
       setStage('live');
       setError(err instanceof Error ? err.message : String(err));
-    }
-  };
-
-  const addPhotos = async (files: FileList | null) => {
-    if (!files?.length) return;
-    setPhotoBusy(true);
-    setError(null);
-    try {
-      for (const file of Array.from(files)) {
-        const blob = await shrink(file);
-        const res = await fetch(`/api/sessions/${sessionId}/photos`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'image/jpeg' },
-          body: blob,
-        });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(data.error ?? 'The photo didn’t upload.');
-        setPhotos(data.count);
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setPhotoBusy(false);
     }
   };
 
@@ -175,86 +134,47 @@ export function LiveSession(props: Props) {
 
       {stage === 'before' && (
         <Card className="space-y-4">
-          {props.consentRecording ? (
-            <p className="text-sm text-ink-soft">
-              <strong className="text-ink">Recording is on for this session.</strong> Tell {props.studentName} before you start
-              {props.studentIsMinor ? ' (their parent has consented)' : ''}. Audio is used only to write the quiz and is deleted
-              right after it’s transcribed.
-            </p>
-          ) : (
-            <p className="text-sm text-ink-soft">
-              Recording was declined for this session. At the end, add 3–5 bullet points and photos of worked problems; the quiz
-              is built from those.
-            </p>
-          )}
+          <p className="text-sm text-ink-soft">
+            <strong className="text-ink">The session’s audio is recorded.</strong> Let {props.studentName} know before you start
+            {props.studentIsMinor ? ' (their parent has agreed)' : ''}. When you end the session it’s turned into a transcript and
+            the audio is deleted immediately. The quiz is written from the transcript.
+          </p>
           <Button onClick={begin} className="w-full" disabled={recorder.state === 'requesting'}>
-            {props.consentRecording ? 'Start session and recording' : 'Start session'}
+            Start session and recording
           </Button>
         </Card>
       )}
 
       {(stage === 'live' || stage === 'ending') && (
         <div className="space-y-4">
-          {props.consentRecording && (
-            <Card className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <span
-                  className={`size-3 rounded-full ${recorder.state === 'recording' ? 'animate-pulse bg-state-appeal' : 'bg-state-held'}`}
-                  aria-hidden
-                />
-                <div>
-                  <p className="font-medium">
-                    {recorder.state === 'recording'
-                      ? 'Recording'
-                      : recorder.state === 'requesting'
-                        ? 'Waiting for the microphone…'
-                        : recorder.state === 'failed'
-                          ? 'Not recording'
-                          : 'Recording stopped'}
-                  </p>
-                  {recorder.error && <p className="text-sm text-state-appeal">{recorder.error}</p>}
-                </div>
+          <Card className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <span
+                className={`size-3 rounded-full ${recorder.state === 'recording' ? 'animate-pulse bg-state-appeal' : 'bg-state-held'}`}
+                aria-hidden
+              />
+              <div>
+                <p className="font-medium">
+                  {recorder.state === 'recording'
+                    ? 'Recording'
+                    : recorder.state === 'requesting'
+                      ? 'Waiting for the microphone…'
+                      : recorder.state === 'failed'
+                        ? 'Not recording'
+                        : 'Recording stopped'}
+                </p>
+                {recorder.error && <p className="text-sm text-state-appeal">{recorder.error}</p>}
               </div>
-              <span className="num text-2xl font-semibold tracking-tight">{clock(recorder.elapsedMs)}</span>
-            </Card>
-          )}
-
-          <Card className="space-y-3">
-            <div className="flex items-center justify-between">
-              <p className="font-medium">Photos of worked problems</p>
-              <span className="num text-sm text-muted">{photos} added</span>
             </div>
-            <label className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-full border border-line-strong px-5 text-[15px] font-medium hover:bg-surface-2">
-              {photoBusy ? 'Uploading…' : 'Add photos'}
-              <input
-                type="file"
-                accept="image/*"
-                capture="environment"
-                multiple
-                className="sr-only"
-                disabled={photoBusy}
-                onChange={(e) => {
-                  void addPhotos(e.target.files);
-                  e.target.value = '';
-                }}
-              />
-            </label>
+            <span className="num text-2xl font-semibold tracking-tight">{clock(recorder.elapsedMs)}</span>
           </Card>
 
-          <Card>
-            <Field
-              label={needsNotes ? 'What you covered (required)' : 'Notes (optional)'}
-              hint="3–5 bullet points, one per line. The quiz is built from these if there's no recording."
-            >
-              <textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                rows={5}
-                placeholder={'- Solving two-step linear equations\n- Distributing negatives\n- Word problems with rates'}
-                className={`${inputClass} min-h-32 py-3`}
-              />
-            </Field>
-          </Card>
+          {recordingProblem && (
+            <p className="rounded-xl bg-surface-2 px-4 py-3 text-sm text-ink-soft">
+              The recording isn’t working, so the quiz will be based on the topics planned at booking. You’ll review them before the
+              quiz is written.
+            </p>
+          )}
 
           <Button onClick={end} disabled={stage === 'ending'} className="w-full">
             {stage === 'ending'
@@ -270,10 +190,10 @@ export function LiveSession(props: Props) {
         <Card className="space-y-2">
           <p className="font-medium">Working out what you covered…</p>
           <p className="text-sm text-muted">
-            Transcribing and reading your photos. This usually takes a minute or two. You can leave this page; the topics will be
-            waiting on the session page.
+            Turning the audio into a transcript, then deleting the audio. This usually takes a minute or two. You can leave this
+            page; the topics will be waiting on the session page.
           </p>
-          {pipelineError && <p className="text-sm text-state-awaiting">{pipelineError}. Using your notes instead.</p>}
+          {pipelineError && <p className="text-sm text-state-awaiting">{pipelineError}. Using the planned topics instead.</p>}
         </Card>
       )}
 
