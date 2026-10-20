@@ -5,9 +5,11 @@
 //   npm run seed            add the demo data (replaces any earlier seed data)
 //   npm run seed -- --clear remove it
 //
-// Also creates the admin account from ADMIN_EMAIL / ADMIN_PASSWORD if set.
+// Also creates the admin account from ADMIN_EMAIL / ADMIN_PASSWORD if set. For the admin alone,
+// with no demo data, use `npm run create-admin`.
 
 import type { Question } from '../lib/claude';
+import { ensureAdmin } from './admin';
 import { db } from '../lib/db';
 import type { EscrowState } from '../lib/generated/prisma/enums';
 import { baseCentsFor, computeSplit } from '../lib/payout';
@@ -70,17 +72,6 @@ async function clear() {
   await db.user.updateMany({ where: seedUsers, data: { parent_id: null } });
   await db.user.deleteMany({ where: seedUsers });
   console.log(`Removed ${ids.length} seed sessions and their users.`);
-}
-
-async function ensureAdmin() {
-  const { ADMIN_EMAIL: email, ADMIN_PASSWORD: password } = process.env;
-  if (!email || !password) return;
-  await db.user.upsert({
-    where: { email: email.toLowerCase() },
-    create: { email: email.toLowerCase(), name: 'Admin', role: 'admin', password_hash: await hashPassword(password) },
-    update: { role: 'admin', password_hash: await hashPassword(password) },
-  });
-  console.log(`Admin account ready: ${email}`);
 }
 
 async function seed() {

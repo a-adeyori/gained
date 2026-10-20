@@ -12,6 +12,7 @@
     "db:migrate": "prisma migrate deploy",
     "db:migrate:dev": "prisma migrate dev",
     "seed": "tsx scripts/seed.ts",
+    "create-admin": "tsx --env-file-if-exists=.env.local scripts/create-admin.ts",
     "workflow": "tsx workflow/index.ts",
     "cron": "tsx scripts/cron.ts",
     "money-loop": "tsx --env-file=.env.local scripts/money-loop.ts"
