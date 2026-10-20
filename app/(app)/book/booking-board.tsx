@@ -80,8 +80,9 @@ export default function BookingBoard({ tutors, ranges, sessions, me, family }: B
   }
 
   return (
-    <div className="space-y-8">
-      <section>
+    // On phones the tappable list of open times comes first; the calendar is cramped there.
+    <div className="flex flex-col gap-8">
+      <section className="order-2 sm:order-1">
         <div className="gained-scheduler h-[420px] sm:h-[520px]">
           <BookingScheduler tutors={tutors} ranges={ranges} sessions={sessions} onSlotClick={openAt} onSessionClick={openSession} />
         </div>
@@ -97,7 +98,7 @@ export default function BookingBoard({ tutors, ranges, sessions, me, family }: B
         )}
       </section>
 
-      <section>
+      <section className="order-1 sm:order-2">
         <h2 className="mb-3 text-sm font-medium uppercase tracking-wider text-muted">Open times</h2>
         <ul className="space-y-3">
           {tutors.map((t) => {

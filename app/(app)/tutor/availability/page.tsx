@@ -60,7 +60,7 @@ export default async function AvailabilityPage() {
   const openSlots = ranges.length;
   const profile = (
     <section>
-      <h2 className="mb-3 text-sm font-medium uppercase tracking-wider text-muted">1 · Your profile</h2>
+      <h2 className="mb-3 text-sm font-medium uppercase tracking-wider text-muted">{profileMissing ? '1' : '2'} · Your profile</h2>
       <Card className="max-w-xl">
         <ProfileForm
           priceCents={user.price_cents}
