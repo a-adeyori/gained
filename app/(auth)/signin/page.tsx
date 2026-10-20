@@ -6,6 +6,8 @@ export const metadata: Metadata = { title: 'Sign in' };
 export default async function SignInPage({ searchParams }: PageProps<'/signin'>) {
   const { link } = await searchParams;
   const message =
-    link === 'expired' ? 'That link has expired or was already replaced. Sign in, and we can send you a new one.' : undefined;
+    link === 'expired'
+      ? 'That link has expired. Sign in to get a new confirmation link, or use “Forgot password?” if you can’t.'
+      : undefined;
   return <AuthForm mode="signin" message={message} />;
 }
