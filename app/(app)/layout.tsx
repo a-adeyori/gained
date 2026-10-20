@@ -29,11 +29,12 @@ export default async function AppLayout({ children }: LayoutProps<'/'>) {
   return (
     <div className="flex min-h-full flex-1 flex-col">
       <header className="sticky top-0 z-20 border-b border-line bg-surface/85 backdrop-blur">
-        <div className="mx-auto flex h-14 w-full max-w-6xl items-center gap-4 px-4">
-          <Link href="/home" aria-label="Gained home">
+        {/* On phones the nav gets its own full-width row under the logo, so no link is cut off. */}
+        <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center gap-x-4 px-4 pt-2 sm:h-14 sm:flex-nowrap sm:pt-0">
+          <Link href="/home" aria-label="Gained home" className="mr-auto sm:mr-0">
             <Logo className="text-xl" />
           </Link>
-          <nav className="-mx-1 flex flex-1 items-center gap-1 overflow-x-auto text-sm">
+          <nav className="order-last -mx-1 flex w-full items-center gap-1 overflow-x-auto py-1.5 text-sm sm:order-none sm:w-auto sm:flex-1 sm:py-0">
             {NAV[user.role].map((item) => (
               <Link key={item.href} href={item.href} className="whitespace-nowrap rounded-full px-3 py-1.5 text-ink-soft hover:bg-surface-2 hover:text-ink">
                 {item.label}
@@ -41,7 +42,7 @@ export default async function AppLayout({ children }: LayoutProps<'/'>) {
             ))}
           </nav>
           <span
-            className="hidden rounded-full px-2.5 py-1 text-xs font-semibold capitalize text-[#121210] sm:inline-block"
+            className="rounded-full px-2.5 py-1 text-xs font-semibold capitalize text-[#121210]"
             style={{ background: ROLE_COLOR[user.role] }}
             title={`Signed in as ${user.name}`}
           >
