@@ -42,6 +42,7 @@ Needs Node.js 20.9 or later, a Postgres database, and a Redis-compatible Key Val
 npm install
 cp env.example .env.local   # fill it in (see below)
 npx prisma migrate deploy    # creates the tables
+npm run services             # local Valkey (Redis) on port 6380 for session audio; needs Docker
 npm run create-admin         # admin account from ADMIN_EMAIL / ADMIN_PASSWORD (resolves appeals)
 npm run seed                 # optional demo data; prints the demo password
 npm run dev

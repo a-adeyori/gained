@@ -1,0 +1,15 @@
+# Local services for development. `npm run services` starts them in the background.
+#
+# Port 6380 on the host, so it doesn't clash with another Redis on 6379.
+#
+# Valkey is the Redis-compatible store Render Key Value runs. Session audio is held here for
+# at most an hour, until it's transcribed, then deleted (lib/media.ts). Nothing is persisted.
+
+services:
+  redis:
+    image: valkey/valkey:8-alpine
+    container_name: gained-redis
+    ports:
+      - "6380:6379"
+    command: ["valkey-server", "--save", "", "--appendonly", "no"]
+    restart: unless-stopped

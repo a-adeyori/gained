@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "services": "docker compose up -d",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
