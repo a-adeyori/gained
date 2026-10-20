@@ -81,6 +81,11 @@ export function AuthForm({
             className={inputClass}
           />
         </Field>
+        {mode === 'signin' && (
+          <Link href="/forgot-password" className="-mt-2 inline-block text-sm text-muted underline underline-offset-4 hover:text-ink">
+            Forgot password?
+          </Link>
+        )}
         {state?.error && (
           <p role="alert" className="text-sm text-state-appeal">
             {state.error}

@@ -28,11 +28,9 @@ export default async function SetPasswordPage({ searchParams }: PageProps<'/set-
       ) : (
         <>
           <h1 className="font-display text-4xl tracking-tight">This link has expired</h1>
-          <p className="mt-2 text-ink-soft">
-            Links work for 2 hours, once. Sign up again with the same email and we’ll send a new one.
-          </p>
-          <Link href="/signup" className="mt-8 font-medium underline underline-offset-4">
-            Get a new link
+          <p className="mt-2 text-ink-soft">Links work for 2 hours, once. Ask for a new one and we’ll email it to you.</p>
+          <Link href="/forgot-password" className="mt-8 font-medium underline underline-offset-4">
+            Send a new link
           </Link>
         </>
       )}

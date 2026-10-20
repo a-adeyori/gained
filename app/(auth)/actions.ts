@@ -70,6 +70,20 @@ export async function resendVerification(): Promise<FormState> {
   return { notice: `Sent. Check ${user.email}.` };
 }
 
+/**
+ * Emails a link to choose a new password. The reply is the same whether or not the email has
+ * an account, so the form can't be used to find out who's signed up.
+ */
+export async function requestPasswordReset(_prev: FormState, form: FormData): Promise<FormState> {
+  const parsed = z.email('Enter a valid email').safeParse(String(form.get('email') ?? '').trim().toLowerCase());
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
+  const email = parsed.data;
+  const user = await db.user.findUnique({ where: { email } });
+  // A child account a parent created has no password yet: the same link sets one up.
+  if (user) await sendSetPassword(user, { claim: !user.password_hash });
+  return { notice: `If ${email} has an account, a link to choose a new password is on its way. It works for 2 hours.` };
+}
+
 const NewPassword = z.object({
   token: z.string().min(1),
   password: z.string().min(8, 'Use at least 8 characters'),
