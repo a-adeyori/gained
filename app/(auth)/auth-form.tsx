@@ -12,10 +12,13 @@ export function AuthForm({
   mode,
   initialRole,
   initialEmail,
+  message,
 }: {
   mode: 'signin' | 'signup';
   initialRole?: SignUpRole;
   initialEmail?: string;
+  /** Shown above the form, e.g. when an emailed link has expired. */
+  message?: string;
 }) {
   const [state, action, pending] = useActionState(mode === 'signin' ? signIn : signUp, undefined);
   const [role, setRole] = useState<SignUpRole>(initialRole ?? 'student');
@@ -35,6 +38,12 @@ export function AuthForm({
               ? 'Book tutors. Pay only for real progress.'
               : 'Get paid more when your students learn more.'}
       </p>
+
+      {message && !state && (
+        <p role="status" className="mt-6 rounded-xl bg-surface-2 px-4 py-3 text-sm text-ink-soft">
+          {message}
+        </p>
+      )}
 
       <form action={action} className="mt-8 space-y-4">
         {mode === 'signup' && (
@@ -75,6 +84,11 @@ export function AuthForm({
         {state?.error && (
           <p role="alert" className="text-sm text-state-appeal">
             {state.error}
+          </p>
+        )}
+        {state?.notice && (
+          <p role="status" className="rounded-xl bg-gain-soft px-4 py-3 text-sm text-gain-ink">
+            {state.notice}
           </p>
         )}
         <Button type="submit" disabled={pending} className="w-full">

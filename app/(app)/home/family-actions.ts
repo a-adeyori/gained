@@ -18,6 +18,7 @@ const Email = z.email('Enter your parent’s email').transform((e) => e.toLowerC
 export async function addParent(_prev: ParentState, form: FormData): Promise<ParentState> {
   const user = await currentUser();
   if (!user || user.role !== 'student') return { error: 'Sign in as a student to add a parent.' };
+  if (!user.email_verified_at) return { error: 'Confirm your email first: click the link we sent you (or resend it from the banner at the top).' };
   const parsed = Email.safeParse(form.get('email'));
   if (!parsed.success) return { error: parsed.error.issues[0].message };
   const email = parsed.data;

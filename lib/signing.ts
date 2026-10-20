@@ -50,6 +50,29 @@ export async function checkPassword(password: string, stored: string | null): Pr
   return safeEqual(actual.toString('base64url'), key);
 }
 
+export type LinkPurpose = 'verify' | 'reset';
+
+/**
+ * A signed, expiring token for an emailed link. The purpose is part of what's signed, so a
+ * verification link can't be used to reset a password, and neither can pass as a sign-in cookie.
+ */
+export function signLink(purpose: LinkPurpose, data: object, ttlMs: number): string {
+  const payload = Buffer.from(JSON.stringify({ ...data, exp: Date.now() + ttlMs })).toString('base64url');
+  return `${payload}.${mac(`${purpose}:${payload}`)}`;
+}
+
+export function readLink<T>(purpose: LinkPurpose, token: string | undefined, now = Date.now()): T | null {
+  if (!token) return null;
+  const [payload, signature] = token.split('.');
+  if (!payload || !signature || !safeEqual(signature, mac(`${purpose}:${payload}`))) return null;
+  try {
+    const data = JSON.parse(Buffer.from(payload, 'base64url').toString()) as T & { exp?: number };
+    return typeof data.exp === 'number' && data.exp > now ? data : null;
+  } catch {
+    return null;
+  }
+}
+
 /** A link token that lets a student open one quiz on their phone without signing in. */
 export const quizToken = (quizId: string) => mac(`quiz:${quizId}`);
 export const checkQuizToken = (quizId: string, token: string | undefined) => !!token && safeEqual(token, quizToken(quizId));
