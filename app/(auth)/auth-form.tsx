@@ -99,6 +99,19 @@ export function AuthForm({
         <Button type="submit" disabled={pending} className="w-full">
           {pending ? 'One moment…' : mode === 'signin' ? 'Sign in' : 'Create account'}
         </Button>
+        {mode === 'signup' && (
+          <p className="text-xs text-muted">
+            By creating an account you agree to the{' '}
+            <Link href="/terms" className="underline underline-offset-4 hover:text-ink">
+              terms
+            </Link>{' '}
+            and{' '}
+            <Link href="/privacy" className="underline underline-offset-4 hover:text-ink">
+              privacy policy
+            </Link>
+            .
+          </p>
+        )}
       </form>
 
       <p className="mt-6 text-sm text-muted">

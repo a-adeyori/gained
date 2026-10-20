@@ -367,7 +367,10 @@ function BookingSheet({
                 <p className="mt-2 pl-7 text-xs leading-relaxed text-muted">
                   Required: the quiz is written from what was actually said. As soon as the session ends, the audio is turned into a
                   written transcript and the audio itself is <span className="font-medium text-ink-soft">deleted immediately</span>. No one
-                  listens to it, and only the transcript is used to write the quiz.
+                  listens to it. The transcript is used only to write the quiz, and is deleted when the session settles.{' '}
+                  <a href="/privacy#recordings" target="_blank" rel="noopener" className="underline underline-offset-4 hover:text-ink">
+                    How recordings are handled
+                  </a>
                 </p>
               </div>
 
