@@ -102,6 +102,28 @@ export function settledEmail(p: {
   };
 }
 
+/** Confirms the address after sign-up. */
+export function verifyEmailMessage(p: { name: string; link: string }): Mail {
+  return {
+    subject: 'Confirm your email for Gained',
+    text: `Hi ${first(p.name)},\n\nConfirm your email so family members can link to your account:\n${p.link}\n\nThe link works for 3 days. If you didn't create a Gained account, you can ignore this email.${sign}`,
+  };
+}
+
+/** A link to choose a password. `claim`: first set-up of a child account a parent created. */
+export function setPasswordMessage(p: { name: string; link: string; claim: boolean }): Mail {
+  if (p.claim) {
+    return {
+      subject: 'Set your password for Gained',
+      text: `Hi ${first(p.name)},\n\nYour account is ready. Choose a password to finish setting it up:\n${p.link}\n\nThe link works for 2 hours. If you didn't ask for this, ignore this email and nothing changes.${sign}`,
+    };
+  }
+  return {
+    subject: 'Reset your Gained password',
+    text: `Hi ${first(p.name)},\n\nChoose a new password here:\n${p.link}\n\nThe link works for 2 hours, once. If you didn't ask to reset your password, ignore this email; your password stays the same.${sign}`,
+  };
+}
+
 /** Someone made a family link. `to` is the other person. */
 export function familyEmail(p: {
   kind: 'parent-added-you' | 'student-added-you' | 'account-created' | 'invited' | 'parent-joined';

@@ -37,6 +37,9 @@ model User {
   name          String
   email         String   @unique
   password_hash String?
+  // Set when they prove they own the address: the link emailed at sign-up, or choosing a
+  // password from an emailed link (lib/verification.ts).
+  email_verified_at DateTime?
   paypal_email  String?
   is_minor      Boolean  @default(false)
   // Students a parent added; an adult student is their own payer and has no parent.

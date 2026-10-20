@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import { decideAddChild, decideAddParent, decideSignUp } from '../lib/family';
 
 type Account = NonNullable<Parameters<typeof decideAddChild>[0]>;
-const student = (over: Partial<Account> = {}): Account => ({ id: 'kid', role: 'student', parent_id: null, password_hash: 'hash', ...over });
-const parent = (over: Partial<Account> = {}): Account => ({ id: 'mom', role: 'parent', parent_id: null, password_hash: 'hash', ...over });
+const student = (over: Partial<Account> = {}): Account => ({ id: 'kid', role: 'student', parent_id: null, password_hash: 'hash', email_verified_at: new Date(), ...over });
+const parent = (over: Partial<Account> = {}): Account => ({ id: 'mom', role: 'parent', parent_id: null, password_hash: 'hash', email_verified_at: new Date(), ...over });
 const kid = { id: 'kid', email: 'kid@x.com', parent_id: null };
 
 test('a parent adding a new email creates the child account', () => {
@@ -43,4 +43,14 @@ test('signing up takes over a child account a parent created, as a student only'
   assert.equal(decideSignUp(student({ password_hash: null }), 'parent').kind, 'error');
   assert.equal(decideSignUp(student(), 'student').kind, 'error');
   assert.equal(decideSignUp(parent(), 'parent').kind, 'error');
+});
+
+test('links only reach confirmed accounts: an unconfirmed parent becomes an invite', () => {
+  assert.deepEqual(decideAddParent(kid, 'mom@x.com', parent({ email_verified_at: null })), { kind: 'invite' });
+});
+
+test('a parent cannot link a student who signed up but has not confirmed their email', () => {
+  assert.equal(decideAddChild(student({ email_verified_at: null }), 'mom').kind, 'error');
+  // A passwordless child account another parent never claimed can't confirm anything, so it can still be linked.
+  assert.deepEqual(decideAddChild(student({ password_hash: null, email_verified_at: null }), 'mom'), { kind: 'link' });
 });

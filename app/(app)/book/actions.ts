@@ -24,6 +24,7 @@ const Child = z.object({
 export async function addChild(_prev: ChildState, form: FormData): Promise<ChildState> {
   const user = await currentUser();
   if (!user || user.role !== 'parent') return { error: 'Sign in as a parent to add a child.' };
+  if (!user.email_verified_at) return { error: 'Confirm your email first: click the link we sent you (or resend it from the banner at the top).' };
   const parsed = Child.safeParse(Object.fromEntries(form));
   if (!parsed.success) return { error: parsed.error.issues[0].message };
   const { name, email, minor } = parsed.data;

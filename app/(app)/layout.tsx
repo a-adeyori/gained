@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { signOut } from '@/app/(auth)/actions';
 import { Logo } from '@/components/ui';
 import { requireUser } from '@/lib/auth';
+import { VerifyBanner } from './verify-banner';
 
 const NAV = {
   parent: [
@@ -51,6 +52,7 @@ export default async function AppLayout({ children }: LayoutProps<'/'>) {
           </form>
         </div>
       </header>
+      {!user.email_verified_at && <VerifyBanner email={user.email} />}
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:py-12">{children}</main>
     </div>
   );

@@ -5,10 +5,13 @@
 //   - a student adds a parent's email: an existing parent is linked now; otherwise the parent is
 //     linked the moment they sign up or sign in with it.
 // A student belongs to one family; once linked, later attempts from anyone else are refused.
+// Links only reach accounts whose email is confirmed (lib/verification.ts), so nobody can
+// grab a family by signing up with someone else's address; the person adding must have
+// confirmed theirs too (checked by the actions).
 // Pure functions (no database), so the rules are tested.
 
 type Role = 'parent' | 'student' | 'tutor' | 'admin';
-type Account = { id: string; role: Role; parent_id: string | null; password_hash: string | null };
+type Account = { id: string; role: Role; parent_id: string | null; password_hash: string | null; email_verified_at: Date | null };
 
 export type AddChildDecision =
   | { kind: 'create' }
@@ -25,6 +28,10 @@ export function decideAddChild(existing: Account | null, parentId: string): AddC
   }
   if (existing.parent_id === parentId) return { kind: 'already-linked' };
   if (existing.parent_id) return { kind: 'error', message: 'That student is already part of another family.' };
+  // A student who signed up but hasn't confirmed their email might not be who they say.
+  if (existing.password_hash && !existing.email_verified_at) {
+    return { kind: 'error', message: 'They haven’t confirmed their email yet. Ask them to click the link we sent, then try again.' };
+  }
   return { kind: 'link' };
 }
 
@@ -43,6 +50,8 @@ export function decideAddParent(
   if (parentEmail === student.email.toLowerCase()) return { kind: 'error', message: 'That’s your own email. Add your parent’s.' };
   if (!existing) return { kind: 'invite' };
   if (existing.role !== 'parent') return { kind: 'error', message: `That email belongs to a ${existing.role} account, not a parent.` };
+  // Not confirmed yet: wait, and link when they confirm it (or sign in once confirmed).
+  if (!existing.email_verified_at) return { kind: 'invite' };
   return { kind: 'link' };
 }
 
