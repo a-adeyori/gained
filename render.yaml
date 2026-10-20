@@ -1,11 +1,19 @@
-# Gained on Render: web service (Next.js), workflow service (post-session pipeline and every
-# capture), cron job (retention quizzes and settlement), Postgres and Key Value.
-# Secrets marked `sync: false` are entered in the Render dashboard when the Blueprint is created.
+# Gained on Render, FREE plan (the hackathon deployment): one web service, Postgres and Key Value.
+#
+# Render's free plan has no workflow or cron services, so:
+#   - background jobs (quiz writing, transcription, captures, payouts) run inside the web service
+#     (WORKFLOW_MODE=inline, lib/jobs.ts);
+#   - the every-15-minutes work runs via POST /api/cron, called by a scheduled GitHub Action
+#     (.github/workflows/scheduled-tasks.yml), which also keeps the free web service awake.
+# Free limits: the database expires 30 days after creation; Key Value is in-memory only.
+# render.production.yaml is the paid setup with a separate workflow service and cron job.
+# Secrets marked `sync: false` are entered in the Render dashboard when the Blueprint is created;
+# leave any you don't have yet blank and add them later under the service's Environment tab.
 
 databases:
   - name: gained-db
     databaseName: gained
-    plan: basic-256mb
+    plan: free
     region: oregon
 
 services:
@@ -13,10 +21,10 @@ services:
     name: gained-web
     runtime: node
     region: oregon
-    plan: starter
+    plan: free
     buildCommand: npm ci && npm run build
-    preDeployCommand: npm run db:migrate
-    startCommand: npm start
+    # Free web services have no pre-deploy step, so migrations run just before the server starts.
+    startCommand: npm run db:migrate && npm start
     healthCheckPath: /
     envVars:
       - key: NODE_VERSION
@@ -32,10 +40,11 @@ services:
           property: connectionString
       - key: SESSION_SECRET
         generateValue: true
-      - key: RENDER_WORKFLOW_SLUG
-        value: gained-workflow
-      - key: RENDER_API_KEY
-        sync: false
+      # Shared with the GitHub Action that calls /api/cron.
+      - key: CRON_SECRET
+        generateValue: true
+      - key: WORKFLOW_MODE
+        value: inline
       - key: PAYPAL_CLIENT_ID
         sync: false
       - key: PAYPAL_SECRET
@@ -44,96 +53,21 @@ services:
         sync: false
       - key: ANTHROPIC_API_KEY
         sync: false
-      - key: AG_STUDIO
-        sync: false
-      # Email: quiz links and notices (lib/mail.ts).
-      - key: RESEND_API_KEY
-        sync: false
-      - key: MAIL_FROM
-        sync: false
-
-  # The post-session pipeline. Task names match lib/jobs.ts; compute plans are set per task.
-  - type: workflow
-    name: gained-workflow
-    runtime: node
-    region: oregon
-    buildCommand: npm ci
-    startCommand: npm run workflow
-    envVars:
-      - key: NODE_VERSION
-        value: "22"
-      - key: DATABASE_URL
-        fromDatabase:
-          name: gained-db
-          property: connectionString
-      - key: REDIS_URL
-        fromService:
-          type: keyvalue
-          name: gained-kv
-          property: connectionString
-      - key: PAYPAL_CLIENT_ID
-        sync: false
-      - key: PAYPAL_SECRET
-        sync: false
-      - key: ANTHROPIC_API_KEY
-        sync: false
       - key: OPENAI_API_KEY
         sync: false
-      # Quiz links in emails are signed with the web service's secret.
-      - key: SESSION_SECRET
-        fromService:
-          type: web
-          name: gained-web
-          envVarKey: SESSION_SECRET
-      # Email: quiz links and notices (lib/mail.ts).
+      # Email (lib/mail.ts). Without RESEND_API_KEY, emails go to the service log instead.
       - key: RESEND_API_KEY
         sync: false
       - key: MAIL_FROM
         sync: false
-      # The web service's public URL, for links in emails (the web service has RENDER_EXTERNAL_URL).
-      - key: APP_URL
+      - key: AG_STUDIO
         sync: false
 
-  # Every 15 minutes: send due retention quizzes, auto-confirm sessions, trigger settlement.
-  - type: cron
-    name: gained-cron
-    runtime: node
-    region: oregon
-    plan: starter
-    schedule: "*/15 * * * *"
-    buildCommand: npm ci
-    startCommand: npm run cron
-    envVars:
-      - key: NODE_VERSION
-        value: "22"
-      - key: DATABASE_URL
-        fromDatabase:
-          name: gained-db
-          property: connectionString
-      - key: RENDER_WORKFLOW_SLUG
-        value: gained-workflow
-      - key: RENDER_API_KEY
-        sync: false
-      # Quiz links in emails are signed with the web service's secret.
-      - key: SESSION_SECRET
-        fromService:
-          type: web
-          name: gained-web
-          envVarKey: SESSION_SECRET
-      # Email: quiz links and notices (lib/mail.ts).
-      - key: RESEND_API_KEY
-        sync: false
-      - key: MAIL_FROM
-        sync: false
-      # The web service's public URL, for links in emails (the web service has RENDER_EXTERNAL_URL).
-      - key: APP_URL
-        sync: false
-
-  # Holds session audio and photos for at most an hour. noeviction so memory pressure fails
-  # an upload loudly instead of silently dropping a recording.
+  # Holds session audio for at most an hour, until it's transcribed. noeviction so a full store
+  # fails an upload loudly instead of silently dropping a recording.
   - type: keyvalue
     name: gained-kv
-    plan: starter
+    plan: free
     region: oregon
     maxmemoryPolicy: noeviction
     ipAllowList: []

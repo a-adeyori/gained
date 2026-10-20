@@ -1,0 +1,32 @@
+# Every 15 minutes, runs the app's scheduled work (auto-confirming sessions, sending 48-hour
+# check-in quizzes, settling payments) by calling POST /api/cron on the deployed site. Stands in
+# for a Render Cron Job, which the free plan doesn't include, and keeps the free web service awake.
+#
+# Repository secrets (Settings → Secrets and variables → Actions):
+#   GAINED_URL   the site, e.g. https://gained-web.onrender.com
+#   CRON_SECRET  the CRON_SECRET value from the Render web service's Environment tab
+
+name: Scheduled tasks
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Call /api/cron
+        env:
+          GAINED_URL: ${{ secrets.GAINED_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$GAINED_URL" ] || [ -z "$CRON_SECRET" ]; then
+            echo "GAINED_URL or CRON_SECRET isn't set yet; skipping."
+            exit 0
+          fi
+          # A free service that's asleep takes about a minute to wake, so allow for it.
+          curl --fail-with-body --silent --show-error --max-time 180 --retry 2 --retry-delay 20 \
+            -X POST -H "Authorization: Bearer $CRON_SECRET" "$GAINED_URL/api/cron"
