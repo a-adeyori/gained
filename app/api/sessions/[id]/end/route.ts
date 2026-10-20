@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { db } from '@/lib/db';
 import { handle, HttpError, json, sessionForTutor } from '@/lib/api';
 import { startJob } from '@/lib/jobs';
+import { notifySessionEnded } from '@/lib/notify';
 
 const Body = z.object({ notes: z.string().max(2000).optional() });
 
@@ -23,6 +24,7 @@ export const POST = handle(async (req: Request, ctx: RouteContext<'/api/sessions
     where: { id },
     data: { status: 'ended', ended_at: now, tutor_confirmed_at: now, notes },
   });
+  await notifySessionEnded(id);
   await startJob('processSession', id);
   if (session.family_confirmed_at) await startJob('releasePayment', id);
   return json({ status: 'ended' });

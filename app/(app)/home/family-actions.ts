@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { currentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { decideAddParent } from '@/lib/family';
+import { notifyFamily } from '@/lib/notify';
 
 export type ParentState = { error?: string; linked?: string; invited?: string } | undefined;
 
@@ -32,11 +33,13 @@ export async function addParent(_prev: ParentState, form: FormData): Promise<Par
       data: { parent_id: existing.id, invited_parent_email: null },
     });
     if (!count) return { error: 'You’re already part of a family.' };
+    await notifyFamily('student-added-you', { toEmail: existing.email, toName: existing.name, byName: user.name });
     revalidatePath('/home');
     return { linked: existing.name };
   }
 
   await db.user.update({ where: { id: user.id }, data: { invited_parent_email: email } });
+  await notifyFamily('invited', { toEmail: email, toName: email, byName: user.name });
   revalidatePath('/home');
   return { invited: email };
 }
