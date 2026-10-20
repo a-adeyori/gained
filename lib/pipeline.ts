@@ -10,6 +10,7 @@
 
 import { AiFailure, extractTopics, gradeWritten, summarizeResult, writeBaseline, writeQuiz, type Question, type TopicList } from './claude';
 import { db } from './db';
+import { notifyQuiz, notifyTopicsReady } from './notify';
 import { captureBase, settle } from './escrow';
 import { gradeDeterministic, quizScore } from './grading';
 import { deleteMedia, listMedia } from './media';
@@ -35,6 +36,7 @@ export async function writeBaselineStep(sessionId: string) {
     const quiz = await db.quiz.create({
       data: { session_id: sessionId, kind: 'baseline', questions_json: questions, sent_at: new Date() },
     });
+    await notifyQuiz(quiz.id);
     return quiz.id;
   } catch (err) {
     // No baseline means nothing to compare against; the session still runs and pays the base.
@@ -103,6 +105,7 @@ export async function extractTopicsStep(sessionId: string) {
   } finally {
     await deleteMedia(sessionId, 'photo');
   }
+  await notifyTopicsReady(sessionId);
 }
 
 /** Both quizzes are written once the tutor confirms the topics; the retention one is held. */
@@ -120,6 +123,7 @@ export async function prepareQuizzesStep(sessionId: string) {
       post = await db.quiz.create({
         data: { session_id: sessionId, kind: 'post', questions_json: questions, sent_at: new Date() },
       });
+      await notifyQuiz(post.id);
     }
     if (!byKind('retention')) {
       const questions = await writeQuiz({

@@ -8,7 +8,15 @@ import { signIn, signUp } from './actions';
 type SignUpRole = 'student' | 'parent' | 'tutor';
 const ROLE_LABEL: Record<SignUpRole, string> = { student: 'Student', parent: 'Parent', tutor: 'Tutor' };
 
-export function AuthForm({ mode, initialRole }: { mode: 'signin' | 'signup'; initialRole?: SignUpRole }) {
+export function AuthForm({
+  mode,
+  initialRole,
+  initialEmail,
+}: {
+  mode: 'signin' | 'signup';
+  initialRole?: SignUpRole;
+  initialEmail?: string;
+}) {
   const [state, action, pending] = useActionState(mode === 'signin' ? signIn : signUp, undefined);
   const [role, setRole] = useState<SignUpRole>(initialRole ?? 'student');
 
@@ -52,7 +60,7 @@ export function AuthForm({ mode, initialRole }: { mode: 'signin' | 'signup'; ini
           </>
         )}
         <Field label="Email">
-          <input name="email" type="email" autoComplete="email" required className={inputClass} />
+          <input name="email" type="email" autoComplete="email" required defaultValue={initialEmail} className={inputClass} />
         </Field>
         <Field label="Password" hint={mode === 'signup' ? 'At least 8 characters' : undefined}>
           <input

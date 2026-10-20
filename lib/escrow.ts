@@ -11,6 +11,7 @@ import {
   voidAuthorization,
   type EscrowAuthPatch,
 } from './paypal';
+import { notifySettled } from './notify';
 import { baseCentsFor, computeSplit, tutorNetCents } from './payout';
 
 const saveEscrow = (sessionId: string) => async (patch: EscrowAuthPatch) => {
@@ -176,7 +177,9 @@ export async function settle(sessionId: string) {
   ]);
 
   const payoutId = await payTutor(sessionId, 'bonus', bonusCents);
-  return db.escrow.update({ where: { session_id: sessionId }, data: { bonus_payout_id: payoutId } });
+  const settled = await db.escrow.update({ where: { session_id: sessionId }, data: { bonus_payout_id: payoutId } });
+  await notifySettled(sessionId);
+  return settled;
 }
 
 /** Where an escrow belongs once an appeal on it is resolved. */

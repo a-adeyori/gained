@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { endSession, startSession } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { decideSignUp } from '@/lib/family';
+import { notifyFamily } from '@/lib/notify';
 import { checkPassword, hashPassword } from '@/lib/signing';
 
 export type FormState = { error?: string } | undefined;
@@ -39,17 +40,25 @@ export async function signUp(_prev: FormState, form: FormData): Promise<FormStat
             paypal_email: role === 'tutor' ? email : null,
           },
         });
-  if (user.role === 'parent') await linkInvitedChildren(user.id, user.email);
+  if (user.role === 'parent') await linkInvitedChildren(user.id, user.name, user.email);
   await startSession(user.id);
   redirect(role === 'tutor' ? '/tutor/availability' : '/home');
 }
 
 /** Students who added this parent's email before the parent had an account join their family. */
-async function linkInvitedChildren(parentId: string, email: string) {
-  await db.user.updateMany({
+async function linkInvitedChildren(parentId: string, parentName: string, email: string) {
+  const invited = await db.user.findMany({
     where: { role: 'student', parent_id: null, invited_parent_email: email.toLowerCase() },
-    data: { parent_id: parentId, invited_parent_email: null },
+    select: { id: true, name: true, email: true },
   });
+  for (const child of invited) {
+    // Only if nobody else added them in the meantime: whoever is first wins.
+    const { count } = await db.user.updateMany({
+      where: { id: child.id, parent_id: null },
+      data: { parent_id: parentId, invited_parent_email: null },
+    });
+    if (count) await notifyFamily('parent-joined', { toEmail: child.email, toName: child.name, byName: parentName });
+  }
 }
 
 export async function signIn(_prev: FormState, form: FormData): Promise<FormState> {
@@ -57,7 +66,7 @@ export async function signIn(_prev: FormState, form: FormData): Promise<FormStat
   const password = String(form.get('password') ?? '');
   const user = await db.user.findUnique({ where: { email } });
   if (!user || !(await checkPassword(password, user.password_hash))) return { error: 'That email and password don’t match.' };
-  if (user.role === 'parent') await linkInvitedChildren(user.id, user.email);
+  if (user.role === 'parent') await linkInvitedChildren(user.id, user.name, user.email);
   await startSession(user.id);
   redirect('/home');
 }

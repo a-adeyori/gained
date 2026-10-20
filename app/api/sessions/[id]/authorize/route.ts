@@ -6,6 +6,7 @@ import { currentUser } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { authorizeBooking } from '@/lib/escrow';
 import { startJob } from '@/lib/jobs';
+import { notifyBooked } from '@/lib/notify';
 
 export async function POST(req: Request, ctx: RouteContext<'/api/sessions/[id]/authorize'>) {
   const { id } = await ctx.params;
@@ -39,6 +40,8 @@ export async function POST(req: Request, ctx: RouteContext<'/api/sessions/[id]/a
       { status: 502 },
     );
   }
+
+  await notifyBooked(id);
 
   // The hold is in place either way; a failed job start is logged, not shown to the parent.
   try {

@@ -9,6 +9,7 @@ import { currentUser } from '@/lib/auth';
 import { MAX_TOPICS_LENGTH, validateBooking } from '@/lib/booking';
 import { db } from '@/lib/db';
 import { decideAddChild } from '@/lib/family';
+import { notifyFamily } from '@/lib/notify';
 import { tutorSessionsAround } from './queries';
 
 export type ChildState = { error?: string; child?: { id: string; name: string; isMinor: boolean } } | undefined;
@@ -40,6 +41,7 @@ export async function addChild(_prev: ChildState, form: FormData): Promise<Child
       data: { parent_id: user.id, is_minor: minor === 'on', invited_parent_email: null },
     });
     if (!count) return { error: 'That student is already part of another family.' };
+    await notifyFamily('parent-added-you', { toEmail: existing.email, toName: existing.name, byName: user.name });
     revalidatePath('/book');
     return { child: { id: existing.id, name: existing.name, isMinor: minor === 'on' } };
   }
@@ -47,6 +49,7 @@ export async function addChild(_prev: ChildState, form: FormData): Promise<Child
   const child = await db.user.create({
     data: { role: 'student', name, email, parent_id: user.id, is_minor: minor === 'on' },
   });
+  await notifyFamily('account-created', { toEmail: email, toName: name, byName: user.name });
   revalidatePath('/book');
   return { child: { id: child.id, name: child.name, isMinor: child.is_minor } };
 }

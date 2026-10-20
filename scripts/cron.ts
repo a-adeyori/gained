@@ -7,6 +7,7 @@
 
 import { db } from '../lib/db';
 import { startJob } from '../lib/jobs';
+import { notifyQuiz } from '../lib/notify';
 import { AUTO_CONFIRM_HOURS, readyToSettle, retentionAction, retentionClosesAt } from '../lib/retention';
 
 const HOUR = 3_600_000;
@@ -41,6 +42,7 @@ async function sendRetentionQuizzes(now: Date) {
     );
     if (action !== 'send') continue;
     await db.quiz.update({ where: { id: quiz.id }, data: { sent_at: now, closes_at: retentionClosesAt(now) } });
+    await notifyQuiz(quiz.id);
     console.log(`sent retention quiz ${quiz.id}`);
   }
 }
