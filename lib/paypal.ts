@@ -3,7 +3,9 @@
 // invoicing, Transaction Search and balance reads the dashboard uses, with plain fetch and
 // no SDK. Server-side only: it reads the client secret from the environment.
 
-const BASE_URL = 'https://api-m.sandbox.paypal.com';
+/** True only when PAYPAL_ENV=live; anything else stays on the sandbox so test keys never move real money. */
+export const PAYPAL_LIVE = process.env.PAYPAL_ENV === 'live';
+const BASE_URL = PAYPAL_LIVE ? 'https://api-m.paypal.com' : 'https://api-m.sandbox.paypal.com';
 const MAX_ATTEMPTS = 4;
 
 export class PayPalApiError extends Error {

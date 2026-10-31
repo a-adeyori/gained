@@ -38,6 +38,8 @@ services:
         value: gained-workflow
       - key: RENDER_API_KEY
         sync: false
+      - key: PAYPAL_ENV
+        value: live
       - key: PAYPAL_CLIENT_ID
         sync: false
       - key: PAYPAL_SECRET
@@ -73,6 +75,8 @@ services:
           type: keyvalue
           name: gained-kv
           property: connectionString
+      - key: PAYPAL_ENV
+        value: live
       - key: PAYPAL_CLIENT_ID
         sync: false
       - key: PAYPAL_SECRET
