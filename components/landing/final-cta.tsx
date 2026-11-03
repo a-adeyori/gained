@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { ButtonLink, Logo } from '@/components/ui';
+import { PAYPAL_LIVE } from '@/lib/paypal';
 import styles from './landing.module.css';
 
 export function FinalCta() {
@@ -35,7 +36,11 @@ export function SiteFooter() {
     <footer className={`${styles.dark} border-t border-line`}>
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-8 text-sm text-muted sm:flex-row sm:items-center sm:justify-between sm:px-6">
         <Logo className="text-xl text-ink" />
-        <p>PayPal sandbox pilot, no real money changes hands during the hackathon.</p>
+        <p>
+          {PAYPAL_LIVE
+            ? 'Payments are held and paid out through PayPal.'
+            : 'PayPal sandbox pilot, no real money changes hands during the hackathon.'}
+        </p>
         <nav aria-label="Footer" className="flex flex-wrap gap-x-4 gap-y-2">
           <Link href="/terms" className="rounded-md hover:text-ink">
             Terms
