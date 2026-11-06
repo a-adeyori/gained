@@ -23,6 +23,7 @@ export default async function LivePage({ params }: PageProps<'/sessions/[id]/liv
       studentIsMinor={session.student.is_minor}
       subject={session.subject}
       plannedTopics={session.planned_topics}
+      meetingPlace={session.meeting_place}
       startAt={session.start_at.toISOString()}
       initialStage={session.status === 'booked' || session.status === 'live' ? 'before' : 'processing'}
       initialTopics={topics?.success ? topics.data : null}

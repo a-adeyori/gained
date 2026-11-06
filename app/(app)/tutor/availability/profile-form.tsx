@@ -1,6 +1,7 @@
 'use client';
 
-// The tutor's booking profile: hourly price, subjects, bio and the PayPal email for payouts.
+// The tutor's booking profile: hourly price, subjects, the area they meet students in, bio and
+// the PayPal email for payouts.
 
 import { useActionState } from 'react';
 import { Button, Field, inputClass, cx } from '@/components/ui';
@@ -11,11 +12,13 @@ export function ProfileForm({
   priceCents,
   subjects,
   bio,
+  serviceArea,
   paypalEmail,
 }: {
   priceCents: number | null;
   subjects: Subject[];
   bio: string;
+  serviceArea: string;
   paypalEmail: string;
 }) {
   const [state, action, pending] = useActionState(saveProfile, undefined);
@@ -48,6 +51,18 @@ export function ProfileForm({
         </div>
         <p className="mt-1 text-xs text-muted">Pick every subject you teach. Families filter tutors by subject.</p>
       </fieldset>
+
+      <Field label="Where you meet students" hint="Sessions are in person. Families see this when booking, and choose the exact place.">
+        <input
+          name="serviceArea"
+          required
+          maxLength={80}
+          defaultValue={serviceArea}
+          placeholder="e.g. Brooklyn, NY"
+          autoComplete="address-level2"
+          className={inputClass}
+        />
+      </Field>
 
       <Field label="Bio" hint="A sentence or two families see when booking.">
         <textarea name="bio" rows={3} maxLength={600} defaultValue={bio} className={cx(inputClass, 'py-2.5')} />

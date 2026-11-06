@@ -81,9 +81,9 @@ async function seed() {
     db.user.create({ data: { password_hash, ...data } });
 
   const tutors = await Promise.all([
-    user({ role: 'tutor', name: 'Maya Okafor', email: 'maya.tutor@example.com', paypal_email: 'maya.tutor@example.com', subjects: ['Math'], price_cents: 6000, bio: 'Algebra and precalculus. Former high school teacher.' }),
-    user({ role: 'tutor', name: 'Daniel Reyes', email: 'daniel.tutor@example.com', paypal_email: 'daniel.tutor@example.com', subjects: ['Physics', 'Math'], price_cents: 7000, bio: 'Physics TA. Mechanics, calculus.' }),
-    user({ role: 'tutor', name: 'Priya Shah', email: 'priya.tutor@example.com', paypal_email: 'priya.tutor@example.com', subjects: ['Math'], price_cents: 5000, bio: 'Learning assistant for intro calculus.' }),
+    user({ role: 'tutor', name: 'Maya Okafor', email: 'maya.tutor@example.com', paypal_email: 'maya.tutor@example.com', subjects: ['Math'], price_cents: 6000, bio: 'Algebra and precalculus. Former high school teacher.', service_area: 'Brooklyn, NY' }),
+    user({ role: 'tutor', name: 'Daniel Reyes', email: 'daniel.tutor@example.com', paypal_email: 'daniel.tutor@example.com', subjects: ['Physics', 'Math'], price_cents: 7000, bio: 'Physics TA. Mechanics, calculus.', service_area: 'Queens, NY' }),
+    user({ role: 'tutor', name: 'Priya Shah', email: 'priya.tutor@example.com', paypal_email: 'priya.tutor@example.com', subjects: ['Math'], price_cents: 5000, bio: 'Learning assistant for intro calculus.', service_area: 'Manhattan, NY' }),
   ]);
   const parentA = await user({ role: 'parent', name: 'Angela Brooks', email: 'angela.parent@example.com' });
   const parentB = await user({ role: 'parent', name: 'Marcus Lee', email: 'marcus.parent@example.com' });
@@ -157,6 +157,7 @@ async function seed() {
         price_cents: price,
         subject,
         planned_topics: topic,
+        meeting_place: 'Brooklyn Public Library, Central branch',
         consent_recording: n % 4 !== 0,
         status: !past ? 'booked' : settled ? 'settled' : 'complete',
         notes: n % 4 === 0 ? `- ${topic}\n- Worked examples\n- Common mistakes` : null,

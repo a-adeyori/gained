@@ -57,6 +57,11 @@ export async function removeAvailability(id: string): Promise<ActionResult> {
 const Profile = z.object({
   price: z.string(),
   bio: z.string().trim().max(600, 'Keep the bio under 600 characters.'),
+  serviceArea: z
+    .string({ error: 'Say where you meet students, e.g. “Brooklyn, NY”.' })
+    .trim()
+    .min(2, 'Say where you meet students, e.g. “Brooklyn, NY”.')
+    .max(80, 'Keep the area under 80 characters.'),
   paypalEmail: z.email('Enter the email of your PayPal account.').transform((e) => e.toLowerCase()),
 });
 
@@ -73,7 +78,13 @@ export async function saveProfile(_prev: ActionResult, form: FormData): Promise<
   if (!subjects.length) return { error: 'Pick at least one subject.' };
   await db.user.update({
     where: { id: user.id },
-    data: { price_cents: priceCents, subjects, bio: parsed.data.bio || null, paypal_email: parsed.data.paypalEmail },
+    data: {
+      price_cents: priceCents,
+      subjects,
+      bio: parsed.data.bio || null,
+      service_area: parsed.data.serviceArea,
+      paypal_email: parsed.data.paypalEmail,
+    },
   });
   revalidatePath(PATH);
   revalidatePath('/book');

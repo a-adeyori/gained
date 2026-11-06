@@ -29,8 +29,8 @@ export default function PrivacyPage() {
         <h2>What we collect</h2>
         <ul>
           <li><strong>Account details:</strong> name, email, password (stored only as a one-way hash), and your role. For students, whether they’re under 18, and who their parent is.</li>
-          <li><strong>Tutor profile:</strong> subjects, price, bio, availability, and the PayPal email payouts go to.</li>
-          <li><strong>Sessions:</strong> subject, time, what the family planned to cover, the topics the tutor confirmed, the tutor’s notes, the transcript (until settlement, as above), and any photos of worked problems the tutor uploads (deleted once processed, within one hour).</li>
+          <li><strong>Tutor profile:</strong> subjects, price, bio, the area they meet students in, availability, and the PayPal email payouts go to.</li>
+          <li><strong>Sessions:</strong> subject, time, where tutor and student meet, what the family planned to cover, the topics the tutor confirmed, the tutor’s notes, the transcript (until settlement, as above), and any photos of worked problems the tutor uploads (deleted once processed, within one hour).</li>
           <li><strong>Quizzes:</strong> questions, answers, scores, and the reasoning behind each grade. These make up the results families and tutors see, and are needed to review appeals.</li>
           <li><strong>Payments:</strong> PayPal handles all card and bank details; we never see them. We keep PayPal’s order, authorization, capture and payout IDs, and the amounts.</li>
           <li><strong>Daily problem:</strong> students’ answers and streaks.</li>
