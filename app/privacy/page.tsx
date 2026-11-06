@@ -8,7 +8,7 @@ export const metadata: Metadata = { title: 'Privacy policy' };
 
 export default function PrivacyPage() {
   return (
-    <LegalPage title="Privacy policy" updated="October 20, 2026">
+    <LegalPage title="Privacy policy" updated="November 5, 2026">
       <section>
         <p>
           Gained is run by <strong>[Company legal name]</strong>. This policy explains what we collect when you use Gained,
@@ -30,7 +30,7 @@ export default function PrivacyPage() {
         <ul>
           <li><strong>Account details:</strong> name, email, password (stored only as a one-way hash), and your role. For students, whether they’re under 18, and who their parent is.</li>
           <li><strong>Tutor profile:</strong> subjects, price, bio, availability, and the PayPal email payouts go to.</li>
-          <li><strong>Sessions:</strong> subject, time, what the family planned to cover, the topics the tutor confirmed, and the transcript (until settlement, as above).</li>
+          <li><strong>Sessions:</strong> subject, time, what the family planned to cover, the topics the tutor confirmed, the tutor’s notes, the transcript (until settlement, as above), and any photos of worked problems the tutor uploads (deleted once processed, within one hour).</li>
           <li><strong>Quizzes:</strong> questions, answers, scores, and the reasoning behind each grade. These make up the results families and tutors see, and are needed to review appeals.</li>
           <li><strong>Payments:</strong> PayPal handles all card and bank details; we never see them. We keep PayPal’s order, authorization, capture and payout IDs, and the amounts.</li>
           <li><strong>Daily problem:</strong> students’ answers and streaks.</li>
@@ -43,7 +43,7 @@ export default function PrivacyPage() {
         <ul>
           <li><strong>PayPal:</strong> holding, capturing and refunding payments, and paying tutors.</li>
           <li><strong>OpenAI:</strong> turning session audio into a transcript.</li>
-          <li><strong>Anthropic (Claude):</strong> writing quizzes from the transcript, grading answers, and answering tutors’ questions about their own dashboard.</li>
+          <li><strong>Anthropic (Claude):</strong> working out what a session covered from its transcript, photos and the tutor’s notes, writing quizzes, grading answers, and answering tutors’ questions about their own dashboard.</li>
           <li><strong>Resend:</strong> sending email (quiz links, booking and results notices, sign-in links).</li>
           <li><strong>Render:</strong> hosting the app and its database, in the United States.</li>
         </ul>
@@ -63,6 +63,7 @@ export default function PrivacyPage() {
         <h2>How long we keep it</h2>
         <ul>
           <li>Audio: deleted right after transcription (at most one hour).</li>
+          <li>Photos of worked problems: deleted once processed (at most one hour).</li>
           <li>Transcripts: deleted when the session settles.</li>
           <li>Accounts, sessions, quiz results and payment records: while your account is open, and afterwards as long as needed for accounting and legal obligations: <strong>[retention period]</strong>.</li>
         </ul>
