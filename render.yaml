@@ -55,7 +55,10 @@ services:
         sync: false
       - key: OPENAI_API_KEY
         sync: false
-      # Email (lib/mail.ts). Without RESEND_API_KEY, emails go to the service log instead.
+      # Email (lib/mail.ts). Set BREVO_API_KEY or RESEND_API_KEY; without either, emails go to the
+      # service log instead.
+      - key: BREVO_API_KEY
+        sync: false
       - key: RESEND_API_KEY
         sync: false
       - key: MAIL_FROM

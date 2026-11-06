@@ -8,7 +8,7 @@ export const metadata: Metadata = { title: 'Privacy policy' };
 
 export default function PrivacyPage() {
   return (
-    <LegalPage title="Privacy policy" updated="November 5, 2026">
+    <LegalPage title="Privacy policy" updated="November 6, 2026">
       <section>
         <p>
           Gained is run by <strong>[Company legal name]</strong>. This policy explains what we collect when you use Gained,
@@ -44,7 +44,7 @@ export default function PrivacyPage() {
           <li><strong>PayPal:</strong> holding, capturing and refunding payments, and paying tutors.</li>
           <li><strong>OpenAI:</strong> turning session audio into a transcript.</li>
           <li><strong>Anthropic (Claude):</strong> working out what a session covered from its transcript, photos and the tutor’s notes, writing quizzes, grading answers, and answering tutors’ questions about their own dashboard.</li>
-          <li><strong>Resend:</strong> sending email (quiz links, booking and results notices, sign-in links).</li>
+          <li><strong>Brevo:</strong> sending email (quiz links, booking and results notices, sign-in links).</li>
           <li><strong>Render:</strong> hosting the app and its database, in the United States.</li>
         </ul>
         <p>Within Gained, a session’s results are visible to its student, the paying parent, the tutor, and our admins (who review appeals). We don’t sell personal data or use it for advertising.</p>
