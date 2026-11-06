@@ -6,13 +6,16 @@ const startAt = new Date('2026-10-22T21:00:00Z');
 const people = { subject: 'Chemistry', studentName: 'Ada Lovelace', tutorName: 'Maya Okafor' };
 
 test('booking emails tell each person what matters to them', () => {
-  const payer = bookedEmail({ ...people, to: 'payer', startAt, priceCents: 6000, link: 'L' });
+  const payer = bookedEmail({ ...people, to: 'payer', startAt, priceCents: 6000, meetingPlace: 'Central Library', link: 'L' });
   assert.match(payer.text, /\$60\.00 is held in PayPal, not charged/);
-  const tutor = bookedEmail({ ...people, to: 'tutor', startAt, priceCents: 6000, link: 'L' });
+  const tutor = bookedEmail({ ...people, to: 'tutor', startAt, priceCents: 6000, meetingPlace: 'Central Library', link: 'L' });
   assert.equal(tutor.subject, 'New booking: Chemistry with Ada Lovelace');
-  const student = bookedEmail({ ...people, to: 'student', startAt, priceCents: 6000, link: 'L' });
+  const student = bookedEmail({ ...people, to: 'student', startAt, priceCents: 6000, meetingPlace: 'Central Library', link: 'L' });
   assert.match(student.text, /^Hi Ada,/);
   assert.match(student.text, /warm-up quiz/);
+  for (const mail of [payer, tutor, student]) assert.match(mail.text, /Where: Central Library/);
+  const older = bookedEmail({ ...people, to: 'payer', startAt, priceCents: 6000, meetingPlace: null, link: 'L' });
+  assert.doesNotMatch(older.text, /Where:/);
 });
 
 test('each quiz email carries its link, and the check-in says when it closes', () => {

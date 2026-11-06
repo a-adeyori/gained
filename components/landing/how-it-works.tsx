@@ -5,7 +5,7 @@ import s from './steps.module.css';
 
 const STEPS = [
   { n: '01', word: 'Book.', line: 'Your payment is held, not charged.', color: '#60a5fa', glyph: '◷' },
-  { n: '02', word: 'Learn.', line: 'Live session. The tutor gets 80% right after.', color: '#a78bfa', glyph: '✦' },
+  { n: '02', word: 'Learn.', line: 'Meet in person. The tutor gets 80% right after.', color: '#a78bfa', glyph: '✦' },
   { n: '03', word: 'Prove it.', line: 'A 5-minute quiz earns the rest. Unearned money comes back to you.', color: '#3ccf7f', glyph: '✓' },
 ];
 

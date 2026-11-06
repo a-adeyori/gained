@@ -91,7 +91,10 @@ export default async function SessionPage({ params }: PageProps<'/sessions/[id]'
   return (
     <div className="mx-auto max-w-3xl">
       <header className="mb-8">
-        <p className="text-sm font-medium text-muted">{dateTime(session.start_at)}</p>
+        <p className="text-sm font-medium text-muted">
+          {dateTime(session.start_at)}
+          {session.meeting_place && <> · {session.meeting_place}</>}
+        </p>
         <h1 className="mt-1 font-display text-4xl leading-tight tracking-tight sm:text-5xl">
           {session.subject} with {isTutor ? session.student.name : session.tutor.name}
         </h1>

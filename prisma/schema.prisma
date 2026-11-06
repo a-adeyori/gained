@@ -49,6 +49,8 @@ model User {
   invited_parent_email String?
   // Tutor profile.
   bio           String?
+  // Where the tutor meets students in person, e.g. "Brooklyn, NY". Shown to families when booking.
+  service_area  String?
   subjects      String[]
   price_cents   Int?
 
@@ -79,6 +81,9 @@ model Session {
   status              String    @default("booked")
   // What the tutor plans to cover, entered at booking; the baseline is written from it.
   planned_topics      String
+  // Where tutor and student meet, entered by the family at booking. Null on sessions booked
+  // before sessions were in person.
+  meeting_place       String?
   // Fallback when recording is declined or fails: the tutor's 3-5 bullet points.
   notes               String?
   // Deleted once the retention quiz is graded.
