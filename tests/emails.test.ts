@@ -52,3 +52,13 @@ test('MAIL_FROM splits into the sender name and address Brevo expects', async ()
   assert.deepEqual(parseSender('a@b.co'), { email: 'a@b.co' });
   assert.deepEqual(parseSender('<a@b.co>'), { email: 'a@b.co' });
 });
+
+test('emails greet by first name, or the whole name when the first word can’t stand alone', async () => {
+  const { first, verifyEmailMessage } = await import('../lib/emails');
+  assert.match(verifyEmailMessage({ name: 'Ada Lovelace', link: 'L' }).text, /^Hi Ada,/);
+  assert.match(verifyEmailMessage({ name: 'Adeyori’s Tutor', link: 'L' }).text, /^Hi Adeyori’s Tutor,/);
+  assert.equal(first("Adeyori's Tutor"), "Adeyori's Tutor");
+  assert.equal(first('Dr. Maya Okafor'), 'Dr. Maya Okafor');
+  assert.equal(first('  Ada   Lovelace '), 'Ada');
+  assert.equal(first('   '), 'there');
+});
