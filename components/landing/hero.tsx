@@ -103,6 +103,13 @@ export function Hero() {
 
         <div className="relative mx-auto grid w-full max-w-6xl grid-cols-1 items-center gap-14 px-4 pb-16 pt-14 sm:px-6 sm:pb-24 sm:pt-20 lg:grid-cols-[1.05fr_1fr] lg:gap-10">
           <div>
+            <p
+              className={`${styles.fadeUp} mb-6 inline-flex items-center gap-2 rounded-full border border-line-strong px-3.5 py-1.5 text-sm text-ink-soft`}
+              style={{ animationDelay: '0ms' }}
+            >
+              <span className="size-1.5 rounded-full bg-gain" aria-hidden="true" />
+              In-person tutoring, any subject
+            </p>
             <h1
               id="hero-title"
               className="font-display text-[3.4rem] leading-[0.95] tracking-tight sm:text-8xl lg:text-[6.2rem]"
@@ -140,8 +147,8 @@ export function Hero() {
               className={`${styles.fadeUp} mt-7 max-w-xl text-lg leading-relaxed text-ink-soft sm:text-xl`}
               style={{ animationDelay: '700ms' }}
             >
-              Payment waits until a short quiz shows real progress. Tutors earn a bonus when students improve, and
-              anything unearned goes back to whoever paid.
+              Tutor and student meet face to face. Payment waits until a short quiz shows real progress, tutors earn a
+              bonus when students improve, and anything unearned goes back to whoever paid.
             </p>
             <div
               className={`${styles.fadeUp} mt-9 flex flex-wrap items-center gap-x-6 gap-y-4`}
