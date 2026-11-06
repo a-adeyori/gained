@@ -26,7 +26,12 @@ const subscribeReduced = (onChange: () => void) => {
 };
 
 const frameFor = (tick: number) => (tick < ESCROW_START ? 'quiz' : tick < RESULT_START ? 'escrow' : 'result');
-const TITLES = { quiz: 'Check-in quiz · Question 3 of 5', escrow: 'Session payment', result: 'Session result' };
+// Each screen says whose view it is, so the loop reads as one session seen by everyone in it.
+const TITLES = {
+  quiz: 'Student · Check-in quiz, question 3 of 5',
+  escrow: 'Parent · Session payment',
+  result: 'Tutor & parent · Session result',
+};
 
 const OPTIONS = ['3 m', '6 m', '9 m', '18 m'];
 const CORRECT = 2;
@@ -121,7 +126,7 @@ export function ProductLoop() {
         <p className="sr-only">
           An example session: the student answers a short quiz question, the payment moves from Held to Base paid to
           Settled, and the $60.00 price splits into $48.00 base to the tutor, a $5.55 learning bonus and $6.45 back to
-          the parent.
+          whoever paid.
         </p>
         <div className={styles.stack} aria-hidden="true">
           {/* Quiz: one question per screen with a progress bar, like the student quiz. */}
