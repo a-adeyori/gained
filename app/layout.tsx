@@ -11,7 +11,7 @@ const instrumentSerif = Instrument_Serif({
 });
 
 export const metadata: Metadata = {
-  title: { template: "%s · Gained", default: "Gained · Pay for what they learned" },
+  title: { template: "%s · Gained", default: "Gained · Learning that pays off" },
   description: "Tutoring where your payment is held until the quiz shows real progress.",
 };
 

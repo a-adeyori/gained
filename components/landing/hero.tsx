@@ -59,6 +59,13 @@ const GLYPHS: { text: string; x: number; y: number; d: number; size: string; del
   { text: 'C₆H₁₂O₆', x: 24, y: 6, d: 1.0, size: 'text-xl', delay: -6.5, color: '#b6f04a' },
 ];
 
+// Everyone the product serves, each with a sign-up that starts on their role.
+const ROLES = [
+  { role: 'student', label: 'Student' },
+  { role: 'parent', label: 'Parent' },
+  { role: 'tutor', label: 'Tutor' },
+] as const;
+
 function Words({ text, start = 0, className }: { text: string; start?: number; className?: string }) {
   // The space sits outside each inline-block word, so the headline can still wrap.
   return text.split(' ').map((word, i) => (
@@ -100,10 +107,10 @@ export function Hero() {
               id="hero-title"
               className="font-display text-[3.4rem] leading-[0.95] tracking-tight sm:text-8xl lg:text-[6.2rem]"
             >
-              <Words text="Pay for what they" />
+              <Words text="Learning that" />
               <span className="relative inline-block">
                 <em className={`${styles.word} ${styles.rainbow} italic`} style={{ animationDelay: '420ms' }}>
-                  learned.
+                  pays off.
                 </em>
                 <svg
                   className={`${styles.underline} absolute -bottom-2 left-0 h-4 w-full`}
@@ -133,7 +140,8 @@ export function Hero() {
               className={`${styles.fadeUp} mt-7 max-w-xl text-lg leading-relaxed text-ink-soft sm:text-xl`}
               style={{ animationDelay: '700ms' }}
             >
-              Your payment waits until the quiz shows real progress. Unearned money comes back.
+              Payment waits until a short quiz shows real progress. Tutors earn a bonus when students improve, and
+              anything unearned goes back to whoever paid.
             </p>
             <div
               className={`${styles.fadeUp} mt-9 flex flex-wrap items-center gap-x-6 gap-y-4`}
@@ -149,6 +157,22 @@ export function Hero() {
                 How it works ↓
               </a>
             </div>
+            <nav
+              aria-label="Join as"
+              className={`${styles.fadeUp} mt-7 flex flex-wrap items-center gap-2 text-sm`}
+              style={{ animationDelay: '950ms' }}
+            >
+              <span className="mr-1 text-muted">Join as a</span>
+              {ROLES.map((r) => (
+                <Link
+                  key={r.role}
+                  href={`/signup?role=${r.role}`}
+                  className="rounded-full border border-line-strong px-3.5 py-1.5 text-ink-soft transition-colors hover:border-ink hover:text-ink"
+                >
+                  {r.label}
+                </Link>
+              ))}
+            </nav>
           </div>
 
           <div className={`${styles.fadeUp} relative`} style={{ animationDelay: '500ms' }}>
