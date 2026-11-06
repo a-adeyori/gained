@@ -6,7 +6,11 @@ import { Button, Field, inputClass, Logo } from '@/components/ui';
 import { signIn, signUp } from './actions';
 
 type SignUpRole = 'student' | 'parent' | 'tutor';
-const ROLE_LABEL: Record<SignUpRole, string> = { student: 'Student', parent: 'Parent', tutor: 'Tutor' };
+const ROLES: { role: SignUpRole; label: string; hint: string }[] = [
+  { role: 'student', label: 'Student', hint: 'I take sessions' },
+  { role: 'parent', label: 'Parent', hint: 'I book for my child' },
+  { role: 'tutor', label: 'Tutor', hint: 'I teach' },
+];
 
 export function AuthForm({
   mode,
@@ -21,7 +25,9 @@ export function AuthForm({
   message?: string;
 }) {
   const [state, action, pending] = useActionState(mode === 'signin' ? signIn : signUp, undefined);
-  const [role, setRole] = useState<SignUpRole>(initialRole ?? 'student');
+  const [role, setRole] = useState<SignUpRole | null>(initialRole ?? null);
+  // Set when someone tries to sign up before choosing a role.
+  const [roleMissing, setRoleMissing] = useState(false);
 
   return (
     <main className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center px-4 py-12">
@@ -36,7 +42,9 @@ export function AuthForm({
             ? 'Daily problems, streaks and your session quizzes.'
             : role === 'parent'
               ? 'Book tutors. Pay only for real progress.'
-              : 'Get paid more when your students learn more.'}
+              : role === 'tutor'
+                ? 'Get paid more when your students learn more.'
+                : 'Start by choosing who you are.'}
       </p>
 
       {message && !state && (
@@ -45,24 +53,58 @@ export function AuthForm({
         </p>
       )}
 
-      <form action={action} className="mt-8 space-y-4">
+      <form
+        action={action}
+        onSubmit={(e) => {
+          if (mode === 'signup' && !role) {
+            e.preventDefault();
+            setRoleMissing(true);
+          }
+        }}
+        className="mt-8 space-y-4"
+      >
         {mode === 'signup' && (
           <>
-            <div role="radiogroup" aria-label="I am a" className="grid grid-cols-3 gap-1 rounded-full bg-surface-2 p-1">
-              {(['student', 'parent', 'tutor'] as const).map((r) => (
-                <button
-                  key={r}
-                  type="button"
-                  role="radio"
-                  aria-checked={role === r}
-                  onClick={() => setRole(r)}
-                  className={`min-h-10 rounded-full text-sm font-medium transition ${role === r ? 'bg-card shadow-sm' : 'text-muted'}`}
-                >
-                  {ROLE_LABEL[r]}
-                </button>
-              ))}
-            </div>
-            <input type="hidden" name="role" value={role} />
+            <fieldset>
+              <legend id="role-label" className="mb-2 text-sm font-medium text-ink">
+                I’m joining as a…
+              </legend>
+              <div
+                role="radiogroup"
+                aria-labelledby="role-label"
+                aria-describedby={roleMissing ? 'role-missing' : undefined}
+                className="grid grid-cols-3 gap-2"
+              >
+                {ROLES.map((r) => (
+                  <button
+                    key={r.role}
+                    type="button"
+                    role="radio"
+                    aria-checked={role === r.role}
+                    onClick={() => {
+                      setRole(r.role);
+                      setRoleMissing(false);
+                    }}
+                    className={`flex min-h-20 flex-col items-center justify-center rounded-2xl border-2 px-2 py-3 text-center transition ${
+                      role === r.role
+                        ? 'border-ink bg-card shadow-sm'
+                        : roleMissing
+                          ? 'border-state-appeal bg-surface-2 hover:border-ink'
+                          : 'border-line bg-surface-2 hover:border-line-strong'
+                    }`}
+                  >
+                    <span className="text-[15px] font-semibold text-ink">{r.label}</span>
+                    <span className="mt-0.5 text-xs leading-tight text-muted">{r.hint}</span>
+                  </button>
+                ))}
+              </div>
+              {roleMissing && (
+                <p id="role-missing" role="alert" className="mt-2 text-sm text-state-appeal">
+                  Choose whether you’re a student, parent or tutor.
+                </p>
+              )}
+            </fieldset>
+            <input type="hidden" name="role" value={role ?? ''} />
             <Field label="Name">
               <input name="name" autoComplete="name" required className={inputClass} />
             </Field>

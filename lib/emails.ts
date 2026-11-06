@@ -5,7 +5,17 @@ import { formatUsd } from './escrow-states';
 
 type Mail = { subject: string; text: string };
 
-const first = (name: string) => name.split(' ')[0];
+const TITLE = /^(mr|mrs|ms|miss|mx|dr|prof)\.?$/i;
+/**
+ * What to call someone after "Hi": their first name, unless that word can't stand alone (a title
+ * like "Dr.", or a possessive like "Adeyori's"), in which case their whole name.
+ */
+export function first(name: string) {
+  const whole = name.trim().replace(/\s+/g, ' ');
+  const word = whole.split(' ')[0];
+  if (!word) return 'there';
+  return TITLE.test(word) || /['’]s$/i.test(word) ? whole : word;
+}
 const when = (d: Date) =>
   d.toLocaleString('en-US', { weekday: 'long', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' });
 const sign = '\n\nGained';

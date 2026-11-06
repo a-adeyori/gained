@@ -12,7 +12,7 @@ import { sendSetPassword, sendVerification, setPasswordFromLink } from '@/lib/ve
 export type FormState = { error?: string; notice?: string } | undefined;
 
 const SignUp = z.object({
-  role: z.enum(['student', 'parent', 'tutor']),
+  role: z.enum(['student', 'parent', 'tutor'], { error: 'Choose whether you’re a student, parent or tutor' }),
   name: z.string().trim().min(1, 'Enter your name'),
   email: z.email('Enter a valid email').transform((e) => e.toLowerCase()),
   password: z.string().min(8, 'Use at least 8 characters'),
