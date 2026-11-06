@@ -51,6 +51,8 @@ services:
       - key: AG_STUDIO
         sync: false
       # Email: quiz links and notices (lib/mail.ts).
+      - key: BREVO_API_KEY
+        sync: false
       - key: RESEND_API_KEY
         sync: false
       - key: MAIL_FROM
@@ -92,6 +94,8 @@ services:
           name: gained-web
           envVarKey: SESSION_SECRET
       # Email: quiz links and notices (lib/mail.ts).
+      - key: BREVO_API_KEY
+        sync: false
       - key: RESEND_API_KEY
         sync: false
       - key: MAIL_FROM
@@ -127,6 +131,8 @@ services:
           name: gained-web
           envVarKey: SESSION_SECRET
       # Email: quiz links and notices (lib/mail.ts).
+      - key: BREVO_API_KEY
+        sync: false
       - key: RESEND_API_KEY
         sync: false
       - key: MAIL_FROM

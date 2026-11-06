@@ -44,3 +44,11 @@ test('family emails name who made the link', () => {
     assert.match(mail.text, /LINK/);
   }
 });
+
+test('MAIL_FROM splits into the sender name and address Brevo expects', async () => {
+  const { parseSender } = await import('../lib/mail');
+  assert.deepEqual(parseSender('Gained <gained.team@gmail.com>'), { name: 'Gained', email: 'gained.team@gmail.com' });
+  assert.deepEqual(parseSender('"Gained Tutors" <a@b.co>'), { name: 'Gained Tutors', email: 'a@b.co' });
+  assert.deepEqual(parseSender('a@b.co'), { email: 'a@b.co' });
+  assert.deepEqual(parseSender('<a@b.co>'), { email: 'a@b.co' });
+});
