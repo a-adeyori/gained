@@ -40,7 +40,8 @@ export function CheckoutPanel({
   const [approvedOrder, setApprovedOrder] = useState<string | null>(null);
   const [retrying, setRetrying] = useState(false);
   const options = useMemo(
-    () => ({ clientId: clientId ?? '', intent: 'authorize', currency: 'USD', components: 'buttons' }),
+    // No Pay Later: it offers to spread the cost, which doesn't fit a hold that charges nothing today.
+    () => ({ clientId: clientId ?? '', intent: 'authorize', currency: 'USD', components: 'buttons', disableFunding: 'paylater' }),
     [clientId],
   );
 
@@ -78,29 +79,36 @@ export function CheckoutPanel({
 
   return (
     <div className="space-y-3">
-      <PayPalScriptProvider options={options}>
-        <ScriptStatus />
-        <PayPalButtons
-          style={{ layout: 'vertical', shape: 'pill', label: 'paypal', height: 48 }}
-          onClick={() => setMessage(null)}
-          createOrder={async () => {
-            const { ok, data } = await post(`/api/sessions/${sessionId}/order`);
-            if (!ok || typeof data.orderId !== 'string') {
-              if (typeof data.state === 'string') setState(data.state as EscrowStateKey);
-              const text = typeof data.error === 'string' ? data.error : GENERIC_ERROR;
-              setMessage({ text, error: true });
-              throw new Error(text);
+      {/* PayPal's buttons live in a light-scheme iframe. On the dark theme the browser paints a
+          hard white box behind it and PayPal's dark "Powered by" text can't be read, so the
+          buttons sit on their own light card in both themes; colorScheme keeps the iframe
+          transparent on it. */}
+      <div className="rounded-2xl bg-white px-4 pb-2 pt-4 shadow-sm ring-1 ring-black/10 sm:px-5 sm:pt-5" style={{ colorScheme: 'light' }}>
+        <p className="mb-3 text-center text-sm font-medium text-neutral-600">Approve the hold with PayPal or a card</p>
+        <PayPalScriptProvider options={options}>
+          <ScriptStatus />
+          <PayPalButtons
+            style={{ layout: 'vertical', shape: 'pill', label: 'paypal', height: 48 }}
+            onClick={() => setMessage(null)}
+            createOrder={async () => {
+              const { ok, data } = await post(`/api/sessions/${sessionId}/order`);
+              if (!ok || typeof data.orderId !== 'string') {
+                if (typeof data.state === 'string') setState(data.state as EscrowStateKey);
+                const text = typeof data.error === 'string' ? data.error : GENERIC_ERROR;
+                setMessage({ text, error: true });
+                throw new Error(text);
+              }
+              return data.orderId;
+            }}
+            onApprove={(approval) => authorize(approval.orderID)}
+            onCancel={() =>
+              setMessage({ text: 'You closed PayPal before approving. Nothing was held or charged. You can try again whenever you’re ready.', error: false })
             }
-            return data.orderId;
-          }}
-          onApprove={(approval) => authorize(approval.orderID)}
-          onCancel={() =>
-            setMessage({ text: 'You closed PayPal before approving. Nothing was held or charged. You can try again whenever you’re ready.', error: false })
-          }
-          // createOrder failures already set a specific message; keep it rather than the generic one.
-          onError={() => setMessage((m) => (m?.error ? m : { text: GENERIC_ERROR, error: true }))}
-        />
-      </PayPalScriptProvider>
+            // createOrder failures already set a specific message; keep it rather than the generic one.
+            onError={() => setMessage((m) => (m?.error ? m : { text: GENERIC_ERROR, error: true }))}
+          />
+        </PayPalScriptProvider>
+      </div>
       {message && (
         <p role={message.error ? 'alert' : 'status'} className={message.error ? 'text-sm text-state-appeal' : 'text-sm text-ink-soft'}>
           {message.text}
@@ -125,7 +133,7 @@ export function CheckoutPanel({
 
 function ScriptStatus() {
   const [{ isPending, isRejected }] = usePayPalScriptReducer();
-  if (isPending) return <div className="h-12 animate-pulse rounded-full bg-surface-2" aria-label="Loading PayPal" />;
+  if (isPending) return <div className="mb-3 h-12 animate-pulse rounded-full bg-neutral-200" aria-label="Loading PayPal" />;
   if (isRejected) {
     return (
       <p role="alert" className="text-sm text-state-appeal">
