@@ -53,6 +53,11 @@ services:
         sync: false
       - key: ANTHROPIC_API_KEY
         sync: false
+      # Quizzes, topics and grading run through Elastic (lib/elastic.ts).
+      - key: ELASTIC_URL
+        sync: false
+      - key: ELASTIC_API_KEY
+        sync: false
       - key: OPENAI_API_KEY
         sync: false
       # Email (lib/mail.ts). Set BREVO_API_KEY or RESEND_API_KEY; without either, emails go to the

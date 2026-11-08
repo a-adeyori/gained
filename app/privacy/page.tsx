@@ -43,7 +43,8 @@ export default function PrivacyPage() {
         <ul>
           <li><strong>PayPal:</strong> holding, capturing and refunding payments, and paying tutors.</li>
           <li><strong>OpenAI:</strong> turning session audio into a transcript.</li>
-          <li><strong>Anthropic (Claude):</strong> working out what a session covered from its transcript, photos and the tutor’s notes, writing quizzes, grading answers, and answering tutors’ questions about their own dashboard.</li>
+          <li><strong>Elastic</strong> (its managed AI, which runs Anthropic’s Claude): working out what a session covered from its transcript and the tutor’s notes, writing quizzes, and grading answers.</li>
+          <li><strong>Anthropic (Claude):</strong> answering tutors’ questions about their own dashboard.</li>
           <li><strong>Brevo:</strong> sending email (quiz links, booking and results notices, sign-in links).</li>
           <li><strong>Render:</strong> hosting the app and its database, in the United States.</li>
         </ul>
