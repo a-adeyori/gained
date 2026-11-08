@@ -50,6 +50,9 @@ services:
         sync: false
       - key: AG_STUDIO
         sync: false
+      # Bryntum licence key for the booking and availability calendars (components/scheduler/license.ts).
+      - key: NEXT_PUBLIC_BRYNTUM_LICENSE_KEY
+        sync: false
       # Email: quiz links and notices (lib/mail.ts).
       - key: BREVO_API_KEY
         sync: false

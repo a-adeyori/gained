@@ -3,8 +3,9 @@
 // Tutor availability view: drag across the "Open time" row to add a range, tap a range to
 // select it, and see booked sessions (read-only) on the row below. Client-only; load it through ./index.
 
-import { BryntumScheduler } from '@bryntum/scheduler-react';
+import { BryntumScheduler } from '@bryntum/scheduler-react-enterprise';
 import { useMemo } from 'react';
+import './license';
 import './theme';
 import { baseSchedulerProps, OPEN_COLOR, sessionColor, type CalendarRange, type CalendarSession } from './types';
 
