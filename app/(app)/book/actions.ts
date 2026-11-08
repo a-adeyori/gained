@@ -55,6 +55,8 @@ export async function addChild(_prev: ChildState, form: FormData): Promise<Child
   return { child: { id: child.id, name: child.name, isMinor: child.is_minor } };
 }
 
+const MAX_MEETING_PLACE_LENGTH = 200;
+
 const Booking = z.object({
   tutorId: z.string().min(1),
   studentId: z.string().min(1, 'Choose who the session is for.'),
@@ -62,6 +64,12 @@ const Booking = z.object({
   durationMin: z.coerce.number().int(),
   subject: z.string({ error: 'Pick a subject.' }),
   plannedTopics: z.string().max(MAX_TOPICS_LENGTH * 2),
+  // Sessions are in person, so both sides need to know where.
+  meetingPlace: z
+    .string({ error: 'Say where you’ll meet.' })
+    .trim()
+    .min(3, 'Say where you’ll meet, e.g. an address or a library.')
+    .max(MAX_MEETING_PLACE_LENGTH, `Keep the meeting place under ${MAX_MEETING_PLACE_LENGTH} characters.`),
   // Recording is how the quiz is written, so it's required. Audio is deleted once transcribed.
   consent: z.literal('on', { error: 'Agree to the recording to book. The audio is deleted as soon as it’s transcribed.' }),
 });
@@ -104,6 +112,7 @@ export async function bookSession(_prev: BookState, form: FormData): Promise<Boo
             price_cents: check.priceCents,
             subject: input.subject,
             planned_topics: check.plannedTopics,
+            meeting_place: input.meetingPlace,
             consent_recording: true,
             status: 'booked',
           },

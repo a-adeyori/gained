@@ -17,7 +17,7 @@ export function FinalCta() {
         </h2>
         <div className="mt-9 flex flex-wrap items-center justify-center gap-x-6 gap-y-4">
           <ButtonLink href="/signup" className="px-6">
-            Book a session
+            Book an in-person session
           </ButtonLink>
           <Link
             href="/signup?role=tutor"

@@ -26,6 +26,7 @@ export default async function BookPage() {
         name: true,
         subjects: true,
         price_cents: true,
+        service_area: true,
         availability: { where: { end_at: { gt: now }, start_at: { lt: until } }, orderBy: { start_at: 'asc' } },
       },
       orderBy: { name: 'asc' },
@@ -49,7 +50,13 @@ export default async function BookPage() {
   ]);
 
   const tutors: CalendarTutor[] = tutorRows
-    .map((t) => ({ id: t.id, name: t.name, subjects: normalizeSubjects(t.subjects), priceCents: t.price_cents ?? 0 }))
+    .map((t) => ({
+      id: t.id,
+      name: t.name,
+      subjects: normalizeSubjects(t.subjects),
+      priceCents: t.price_cents ?? 0,
+      serviceArea: t.service_area,
+    }))
     .filter((t) => t.subjects.length > 0);
   const tutorIds = new Set(tutors.map((t) => t.id));
 

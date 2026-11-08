@@ -11,7 +11,7 @@ import { VoiceClip } from '@/components/landing/voice-clip';
 export const metadata: Metadata = {
   title: { absolute: 'Gained · Learning that pays off' },
   description:
-    'Tutoring in any subject where your payment is held through PayPal until a short quiz shows real progress. What isn’t earned comes back to you.',
+    'In-person tutoring in any subject where your payment is held through PayPal until a short quiz shows real progress. What isn’t earned comes back to you.',
 };
 
 export default function LandingPage() {

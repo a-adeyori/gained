@@ -66,6 +66,7 @@ export default async function AvailabilityPage() {
           priceCents={user.price_cents}
           subjects={normalizeSubjects(user.subjects)}
           bio={user.bio ?? ''}
+          serviceArea={user.service_area ?? ''}
           paypalEmail={user.paypal_email ?? user.email}
         />
       </Card>

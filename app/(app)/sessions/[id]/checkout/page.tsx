@@ -48,6 +48,8 @@ export default async function CheckoutPage({ params }: PageProps<'/sessions/[id]
             <LocalTime iso={session.start_at.toISOString()} endIso={session.end_at.toISOString()} />
             <span className="text-muted"> · {minutes} min</span>
           </dd>
+          <dt className="text-muted">Where</dt>
+          <dd>{session.meeting_place ?? 'Not set'}</dd>
           <dt className="text-muted">Subject</dt>
           <dd>{session.subject}</dd>
           <dt className="text-muted">Covering</dt>

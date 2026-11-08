@@ -27,24 +27,27 @@ export function bookedEmail(p: {
   tutorName: string;
   startAt: Date;
   priceCents: number;
+  /** Where they meet in person; null on sessions booked before sessions had a place. */
+  meetingPlace: string | null;
   link: string;
 }): Mail {
   const at = when(p.startAt);
+  const where = p.meetingPlace ? `\n\nWhere: ${p.meetingPlace}` : '';
   if (p.to === 'tutor') {
     return {
       subject: `New booking: ${p.subject} with ${p.studentName}`,
-      text: `${p.studentName} booked ${p.subject} with you for ${at}.\n\nThe ${formatUsd(p.priceCents)} is held in PayPal. Open the session room from your home screen when it's time:\n${p.link}${sign}`,
+      text: `${p.studentName} booked ${p.subject} with you for ${at}.${where}\n\nThe ${formatUsd(p.priceCents)} is held in PayPal. Open the session room from your home screen when it's time:\n${p.link}${sign}`,
     };
   }
   if (p.to === 'student') {
     return {
       subject: `You're booked: ${p.subject} with ${first(p.tutorName)}`,
-      text: `Hi ${first(p.studentName)},\n\nYou have ${p.subject} with ${p.tutorName} on ${at}.\n\nWe'll email you a short warm-up quiz before it starts, so your progress can be measured.${sign}`,
+      text: `Hi ${first(p.studentName)},\n\nYou have ${p.subject} with ${p.tutorName} on ${at}.${where}\n\nWe'll email you a short warm-up quiz before it starts, so your progress can be measured.${sign}`,
     };
   }
   return {
     subject: `Booked: ${p.subject} with ${p.tutorName}`,
-    text: `${p.subject} with ${p.tutorName} is booked for ${at}.\n\n${formatUsd(p.priceCents)} is held in PayPal, not charged. The tutor gets 80% after the session; quizzes decide the rest, and what isn't earned comes back to you.\n\n${p.link}${sign}`,
+    text: `${p.subject} with ${p.tutorName} is booked for ${at}.${where}\n\n${formatUsd(p.priceCents)} is held in PayPal, not charged. The tutor gets 80% after the session; quizzes decide the rest, and what isn't earned comes back to you.\n\n${p.link}${sign}`,
   };
 }
 

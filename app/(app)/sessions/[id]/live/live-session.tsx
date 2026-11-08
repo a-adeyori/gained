@@ -18,6 +18,7 @@ type Props = {
   studentIsMinor: boolean;
   subject: string;
   plannedTopics: string;
+  meetingPlace: string | null;
   startAt: string;
   initialStage: 'before' | 'processing';
   initialTopics: TopicList | null;
@@ -121,6 +122,7 @@ export function LiveSession(props: Props) {
             <br />
             <span className="text-sm text-muted">
               Starts {new Date(props.startAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+              {props.meetingPlace && <> · {props.meetingPlace}</>}
             </span>
           </>
         )}
