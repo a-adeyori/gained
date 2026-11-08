@@ -54,8 +54,8 @@ export default async function CheckoutPage({ params }: PageProps<'/sessions/[id]
           <dd>{session.subject}</dd>
           <dt className="text-muted">Covering</dt>
           <dd className="text-ink-soft">{session.planned_topics}</dd>
-          <dt className="text-muted">Recording</dt>
-          <dd className="text-ink-soft">Audio only, deleted as soon as it’s transcribed</dd>
+          <dt className="text-muted">Quiz</dt>
+          <dd className="text-ink-soft">Written from what the tutor says they taught. Sessions aren’t recorded.</dd>
         </dl>
         <div className="mt-5 flex items-baseline justify-between border-t border-line pt-4">
           <span className="text-sm text-muted">Full price</span>

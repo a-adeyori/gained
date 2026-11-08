@@ -1,21 +1,22 @@
 'use client';
 
-// PRD screen 4, for the tutor: start the session (and its recording), end it, then the one
-// follow-up action: confirm the topics. The quiz comes from the transcript; if the microphone
-// fails, from the topics planned at booking, which the tutor reviews before confirming.
+// PRD screen 4, for the tutor: start the session, write what was taught, end it, then the one
+// follow-up action: confirm the topics. Sessions aren't recorded: the post-session quiz is
+// written from the tutor's summary, turned into a topic list the tutor reviews before confirming.
 
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Button, ButtonLink, Card, inputClass, PageTitle } from '@/components/ui';
+import { Button, ButtonLink, Card, Field, inputClass, PageTitle } from '@/components/ui';
 import type { TopicList } from '@/lib/claude';
-import { useRecorder } from './use-recorder';
 
 type Stage = 'before' | 'live' | 'ending' | 'processing' | 'topics' | 'done';
+
+/** Matches the end route's limit. */
+const MAX_NOTES_LENGTH = 2000;
 
 type Props = {
   sessionId: string;
   studentName: string;
-  studentIsMinor: boolean;
   subject: string;
   plannedTopics: string;
   meetingPlace: string | null;
@@ -50,17 +51,25 @@ export function LiveSession(props: Props) {
   const [topics, setTopics] = useState<TopicList | null>(props.initialTopics);
   const [quizPath, setQuizPath] = useState<string | null>(null);
   const [pipelineError, setPipelineError] = useState<string | null>(null);
-  const recorder = useRecorder(`/api/sessions/${sessionId}/audio`);
+  const [notes, setNotes] = useState('');
+  const [startedAt, setStartedAt] = useState<number | null>(null);
+  const [now, setNow] = useState(0);
 
-  // If the microphone fails, the quiz falls back to the topics planned at booking.
-  const recordingProblem = recorder.state === 'failed' || recorder.uploadFailed;
+  // The session clock ticks once a second while the session is live.
+  useEffect(() => {
+    if (stage !== 'live' || startedAt === null) return;
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, [stage, startedAt]);
 
   const begin = async () => {
     setError(null);
     try {
       await post(`/api/sessions/${sessionId}/start`);
+      const t = Date.now();
+      setStartedAt(t);
+      setNow(t);
       setStage('live');
-      await recorder.start();
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     }
@@ -70,8 +79,7 @@ export function LiveSession(props: Props) {
     setError(null);
     setStage('ending');
     try {
-      await recorder.stop();
-      await post(`/api/sessions/${sessionId}/end`, {});
+      await post(`/api/sessions/${sessionId}/end`, { notes });
       setStage('processing');
     } catch (err) {
       setStage('live');
@@ -137,12 +145,11 @@ export function LiveSession(props: Props) {
       {stage === 'before' && (
         <Card className="space-y-4">
           <p className="text-sm text-ink-soft">
-            <strong className="text-ink">The session’s audio is recorded.</strong> Let {props.studentName} know before you start
-            {props.studentIsMinor ? ' (their parent has agreed)' : ''}. When you end the session it’s turned into a transcript and
-            the audio is deleted immediately. The quiz is written from the transcript.
+            When you end the session, you’ll write what you taught {props.studentName}: the subtopics, or a short summary. The quiz
+            after the session is written from it. Sessions aren’t recorded.
           </p>
-          <Button onClick={begin} className="w-full" disabled={recorder.state === 'requesting'}>
-            Start session and recording
+          <Button onClick={begin} className="w-full">
+            Start session
           </Button>
         </Card>
       )}
@@ -151,40 +158,32 @@ export function LiveSession(props: Props) {
         <div className="space-y-4">
           <Card className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <span
-                className={`size-3 rounded-full ${recorder.state === 'recording' ? 'animate-pulse bg-state-appeal' : 'bg-state-held'}`}
-                aria-hidden
-              />
-              <div>
-                <p className="font-medium">
-                  {recorder.state === 'recording'
-                    ? 'Recording'
-                    : recorder.state === 'requesting'
-                      ? 'Waiting for the microphone…'
-                      : recorder.state === 'failed'
-                        ? 'Not recording'
-                        : 'Recording stopped'}
-                </p>
-                {recorder.error && <p className="text-sm text-state-appeal">{recorder.error}</p>}
-              </div>
+              <span className="size-3 animate-pulse rounded-full bg-state-base" aria-hidden />
+              <p className="font-medium">Session in progress</p>
             </div>
-            <span className="num text-2xl font-semibold tracking-tight">{clock(recorder.elapsedMs)}</span>
+            <span className="num text-2xl font-semibold tracking-tight">{clock(startedAt === null ? 0 : now - startedAt)}</span>
           </Card>
 
-          {recordingProblem && (
-            <p className="rounded-xl bg-surface-2 px-4 py-3 text-sm text-ink-soft">
-              The recording isn’t working, so the quiz will be based on the topics planned at booking. You’ll review them before the
-              quiz is written.
-            </p>
-          )}
+          <Card>
+            <Field
+              label={`What did you teach ${props.studentName}?`}
+              hint="The subtopics you covered or a short summary, including any problems you worked through. The quiz is written from this, so be specific. You can fill it in as you go."
+            >
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                maxLength={MAX_NOTES_LENGTH}
+                rows={6}
+                placeholder={'e.g.\n- Newton’s second law, F = ma\n- Drawing free-body diagrams\n- Worked: a 10 kg sled pulled with 50 N against 20 N friction'}
+                className={`${inputClass} py-2.5`}
+              />
+            </Field>
+          </Card>
 
-          <Button onClick={end} disabled={stage === 'ending'} className="w-full">
-            {stage === 'ending'
-              ? recorder.uploadsPending
-                ? 'Uploading the recording…'
-                : 'Ending…'
-              : 'End session'}
+          <Button onClick={end} disabled={stage === 'ending' || !notes.trim()} className="w-full">
+            {stage === 'ending' ? 'Ending…' : 'End session'}
           </Button>
+          {!notes.trim() && <p className="text-center text-sm text-muted">Write what you taught to end the session.</p>}
         </div>
       )}
 
@@ -192,10 +191,10 @@ export function LiveSession(props: Props) {
         <Card className="space-y-2">
           <p className="font-medium">Working out what you covered…</p>
           <p className="text-sm text-muted">
-            Turning the audio into a transcript, then deleting the audio. This usually takes a minute or two. You can leave this
+            Turning your summary into a list of topics for you to check. This usually takes under a minute. You can leave this
             page; the topics will be waiting on the session page.
           </p>
-          {pipelineError && <p className="text-sm text-state-awaiting">{pipelineError}. Using the planned topics instead.</p>}
+          {pipelineError && <p className="text-sm text-state-awaiting">{pipelineError}. Using your summary as the topics instead.</p>}
         </Card>
       )}
 

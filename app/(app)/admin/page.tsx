@@ -102,7 +102,7 @@ export default async function AdminPage({ searchParams }: PageProps<'/admin'>) {
                         Re-run…
                       </option>
                       <option value="writeBaseline">Baseline</option>
-                      <option value="processSession">Transcribe + topics</option>
+                      <option value="processSession">Topics</option>
                       <option value="prepareQuizzes">Write quizzes</option>
                       <option value="releasePayment">Release base</option>
                       <option value="settleSession">Settle</option>

@@ -8,7 +8,7 @@ export const metadata: Metadata = { title: 'Privacy policy' };
 
 export default function PrivacyPage() {
   return (
-    <LegalPage title="Privacy policy" updated="November 6, 2026">
+    <LegalPage title="Privacy policy" updated="November 8, 2026">
       <section>
         <p>
           Gained is run by <strong>[Company legal name]</strong>. This policy explains what we collect when you use Gained,
@@ -16,12 +16,12 @@ export default function PrivacyPage() {
         </p>
       </section>
 
-      <section id="recordings">
-        <h2>Session recordings</h2>
+      <section id="quizzes">
+        <h2>How quizzes are written</h2>
         <ul>
-          <li>Every session’s audio is recorded, with the parent’s (or adult student’s) agreement at booking. It’s how the quiz is written from what was actually covered.</li>
-          <li>When the session ends, the audio is turned into a written transcript and the <strong>audio is deleted immediately</strong>. It’s never kept longer than one hour, even if transcription fails. No person listens to it.</li>
-          <li>The transcript is used only to write that session’s quizzes, and is <strong>deleted when the session settles</strong> (after the 48-hour check-in).</li>
+          <li><strong>Sessions aren’t recorded.</strong> No audio or video of a session is captured.</li>
+          <li>The warm-up quiz before a session is written from what the family says the student needs to learn, entered at booking.</li>
+          <li>The quiz after the session and the 48-hour check-in are written from the tutor’s summary of what they taught, which the tutor reviews as a list of topics before any quiz is written.</li>
         </ul>
       </section>
 
@@ -30,7 +30,7 @@ export default function PrivacyPage() {
         <ul>
           <li><strong>Account details:</strong> name, email, password (stored only as a one-way hash), and your role. For students, whether they’re under 18, and who their parent is.</li>
           <li><strong>Tutor profile:</strong> subjects, price, bio, the area they meet students in, availability, and the PayPal email payouts go to.</li>
-          <li><strong>Sessions:</strong> subject, time, where tutor and student meet, what the family planned to cover, the topics the tutor confirmed, the tutor’s notes, the transcript (until settlement, as above), and any photos of worked problems the tutor uploads (deleted once processed, within one hour).</li>
+          <li><strong>Sessions:</strong> subject, time, where tutor and student meet, what the family planned to cover, the topics the tutor confirmed, the tutor’s summary of what they taught, and any photos of worked problems the tutor uploads (deleted once processed, within one hour).</li>
           <li><strong>Quizzes:</strong> questions, answers, scores, and the reasoning behind each grade. These make up the results families and tutors see, and are needed to review appeals.</li>
           <li><strong>Payments:</strong> PayPal handles all card and bank details; we never see them. We keep PayPal’s order, authorization, capture and payout IDs, and the amounts.</li>
           <li><strong>Daily problem:</strong> students’ answers and streaks.</li>
@@ -42,8 +42,7 @@ export default function PrivacyPage() {
         <p>Only the services that make Gained work, each for its one job:</p>
         <ul>
           <li><strong>PayPal:</strong> holding, capturing and refunding payments, and paying tutors.</li>
-          <li><strong>OpenAI:</strong> turning session audio into a transcript.</li>
-          <li><strong>Elastic</strong> (its managed AI, which runs Anthropic’s Claude): working out what a session covered from its transcript and the tutor’s notes, writing quizzes, and grading answers.</li>
+          <li><strong>Elastic</strong> (its managed AI, which runs Anthropic’s Claude): writing the warm-up quiz from what the family entered, working out what a session covered from the tutor’s summary, writing the later quizzes, and grading answers.</li>
           <li><strong>Anthropic (Claude):</strong> answering tutors’ questions about their own dashboard.</li>
           <li><strong>Brevo:</strong> sending email (quiz links, booking and results notices, sign-in links).</li>
           <li><strong>Render:</strong> hosting the app and its database, in the United States.</li>
@@ -63,9 +62,7 @@ export default function PrivacyPage() {
       <section>
         <h2>How long we keep it</h2>
         <ul>
-          <li>Audio: deleted right after transcription (at most one hour).</li>
           <li>Photos of worked problems: deleted once processed (at most one hour).</li>
-          <li>Transcripts: deleted when the session settles.</li>
           <li>Accounts, sessions, quiz results and payment records: while your account is open, and afterwards as long as needed for accounting and legal obligations: <strong>[retention period]</strong>.</li>
         </ul>
       </section>
@@ -73,7 +70,7 @@ export default function PrivacyPage() {
       <section>
         <h2>Children</h2>
         <p>
-          Students under 18 use Gained with a parent, who books and pays for sessions and agrees to the recording.{' '}
+          Students under 18 use Gained with a parent, who books and pays for sessions.{' '}
           <strong>[Policy for children under 13, and how parental consent is verified under COPPA, to be decided with counsel.]</strong>
         </p>
       </section>

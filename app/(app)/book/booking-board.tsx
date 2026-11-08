@@ -227,12 +227,6 @@ function BookingSheet({
   const end = start ? new Date(start.getTime() + duration * 60_000) : undefined;
   const priceCents = prorateCents(tutor.priceCents, duration);
 
-  const consentCopy =
-    student.id === me.id
-      ? 'I agree to this session’s audio being recorded to write my quiz.'
-      : student.isMinor
-        ? 'I’m the parent or guardian and I agree to this session’s audio being recorded to write the quiz.'
-        : `${student.name.split(' ')[0]} agrees to this session’s audio being recorded to write the quiz.`;
 
   return (
     <div className="fixed inset-0 z-40" role="dialog" aria-modal="true" aria-labelledby={titleId}>
@@ -352,13 +346,16 @@ function BookingSheet({
                 </div>
               </fieldset>
 
-              <Field label="What should the session cover?" hint="The warm-up quiz is written from this.">
+              <Field
+                label={student.id === me.id ? 'What do you need to learn?' : `What does ${student.name.split(' ')[0]} need to learn?`}
+                hint="The warm-up quiz before the session is written from this, so it shows where they’re starting."
+              >
                 <textarea
                   name="plannedTopics"
                   required
                   maxLength={MAX_TOPICS_LENGTH}
                   rows={3}
-                  placeholder="e.g. Factoring quadratics and the quadratic formula"
+                  placeholder="e.g. what they’re stuck on, the topics on their next test, or a skill to practise"
                   className={cx(inputClass, 'py-2.5')}
                 />
               </Field>
@@ -377,20 +374,10 @@ function BookingSheet({
                 />
               </Field>
 
-              <div className="rounded-xl border border-line p-3.5">
-                <label className="flex items-start gap-3 text-sm">
-                  <input type="checkbox" name="consent" required className="mt-1" />
-                  <span>{consentCopy}</span>
-                </label>
-                <p className="mt-2 pl-7 text-xs leading-relaxed text-muted">
-                  Required: the quiz is written from what was actually said. As soon as the session ends, the audio is turned into a
-                  written transcript and the audio itself is <span className="font-medium text-ink-soft">deleted immediately</span>. No one
-                  listens to it. The transcript is used only to write the quiz, and is deleted when the session settles.{' '}
-                  <a href="/privacy#recordings" target="_blank" rel="noopener" className="underline underline-offset-4 hover:text-ink">
-                    How recordings are handled
-                  </a>
-                </p>
-              </div>
+              <p className="rounded-xl bg-surface-2 p-3.5 text-xs leading-relaxed text-ink-soft">
+                Sessions aren’t recorded. After the session, the tutor writes what they taught, and the quiz that measures progress is
+                written from it.
+              </p>
 
               <div className="flex items-baseline justify-between border-t border-line pt-4">
                 <span className="text-sm text-ink-soft">

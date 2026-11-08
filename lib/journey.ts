@@ -98,7 +98,7 @@ export function nextStep(s: JourneySession, viewerId: string, now = new Date()):
     if (isTutor) {
       const soon = s.start_at.getTime() - now.getTime() < 15 * 60_000;
       return soon
-        ? { kind: 'action', title: `Start your session with ${student}`, detail: 'Open the session room, record if allowed, and tap End when you’re done.', cta: 'Open session room', href: `${page}/live` }
+        ? { kind: 'action', title: `Start your session with ${student}`, detail: 'Open the session room, write what you taught, and tap End when you’re done.', cta: 'Open session room', href: `${page}/live` }
         : { kind: 'wait', title: `Session with ${student}`, detail: `Opens ${when(s.start_at)}. ${baseline?.completed_at ? `${student} finished the warm-up.` : `${student} hasn’t done the warm-up yet.`}` };
     }
     if (isPayer && !isStudent && isOpen(baseline, now)) {

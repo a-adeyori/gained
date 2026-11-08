@@ -9,7 +9,7 @@ export const metadata: Metadata = { title: 'Terms of service' };
 
 export default function TermsPage() {
   return (
-    <LegalPage title="Terms of service" updated="October 20, 2026">
+    <LegalPage title="Terms of service" updated="November 8, 2026">
       <section>
         <p>
           These terms are an agreement between you and <strong>[Company legal name]</strong> (“Gained”). By creating an account
@@ -25,7 +25,7 @@ export default function TermsPage() {
         <h2>Accounts</h2>
         <ul>
           <li>Give accurate details and keep your password private. You’re responsible for activity on your account.</li>
-          <li>Parents are responsible for the student accounts in their family, including agreeing to recordings for students under 18.</li>
+          <li>Parents are responsible for the student accounts in their family.</li>
           <li>A student belongs to one family. The first parent or student to add the other makes the link.</li>
         </ul>
       </section>
@@ -43,14 +43,15 @@ export default function TermsPage() {
       </section>
 
       <section>
-        <h2>Recording</h2>
+        <h2>How progress is measured</h2>
         <p>
-          Sessions are recorded so the quiz matches what was covered; agreeing to this is required to book. How the recording is
-          handled and deleted is in the{' '}
-          <Link href="/privacy#recordings" className="underline underline-offset-4">
+          Sessions aren’t recorded. The warm-up quiz is written from what the family says the student needs to learn, and the quizzes
+          after the session from the tutor’s summary of what they taught. Tutors must describe what they actually taught, accurately,
+          since the quizzes and their learning bonus depend on it. More in the{' '}
+          <Link href="/privacy#quizzes" className="underline underline-offset-4">
             privacy policy
           </Link>
-          . Tutors must tell the student the session is being recorded before starting.
+          .
         </p>
       </section>
 

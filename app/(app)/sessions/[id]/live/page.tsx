@@ -20,7 +20,6 @@ export default async function LivePage({ params }: PageProps<'/sessions/[id]/liv
     <LiveSession
       sessionId={session.id}
       studentName={session.student.name}
-      studentIsMinor={session.student.is_minor}
       subject={session.subject}
       plannedTopics={session.planned_topics}
       meetingPlace={session.meeting_place}
