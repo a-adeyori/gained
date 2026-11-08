@@ -1,6 +1,6 @@
 /*
- * Bryntum styling for Gained. The structural CSS, FontAwesome and the light theme are
- * imported from theme.ts; the dark theme's variables come from dark-theme.generated.css (see scripts/bryntum-dark-theme.mjs).
+ * Bryntum styling for Gained. The structural CSS, FontAwesome and the theme (which follows
+ * light and dark mode by itself) are imported from theme.ts.
  */
 
 .gained-scheduler {

@@ -9,7 +9,7 @@
     "start": "next start",
     "lint": "eslint",
     "test": "tsx --test tests/*.test.ts",
-    "postinstall": "prisma generate && node scripts/bryntum-dark-theme.mjs",
+    "postinstall": "prisma generate",
     "db:migrate": "prisma migrate deploy",
     "db:migrate:dev": "prisma migrate dev",
     "seed": "tsx scripts/seed.ts",
@@ -20,8 +20,9 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.135.0",
-    "@bryntum/scheduler": "npm:@bryntum/scheduler-trial@^7.3.7",
-    "@bryntum/scheduler-react": "^7.3.7",
+    "@bryntum/core-enterprise": "8.0.0",
+    "@bryntum/scheduler-enterprise": "8.0.0",
+    "@bryntum/scheduler-react-enterprise": "8.0.0",
     "@paypal/react-paypal-js": "^10.6.0",
     "@prisma/adapter-pg": "^7.10.1",
     "@prisma/client": "^7.10.1",
@@ -60,8 +61,6 @@
     "esbuild@0.25.12": true,
     "prisma@7.10.1": true,
     "unrs-resolver@1.12.2": true,
-    "@bryntum/scheduler-trial@7.3.7": true,
-    "@bryntum/scheduler-trial-lib@1.0.1": true,
     "@prisma/engines@7.10.1": true
   }
 }

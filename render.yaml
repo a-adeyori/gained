@@ -65,6 +65,9 @@ services:
         sync: false
       - key: AG_STUDIO
         sync: false
+      # Bryntum licence key for the booking and availability calendars (components/scheduler/license.ts).
+      - key: NEXT_PUBLIC_BRYNTUM_LICENSE_KEY
+        sync: false
 
   # Holds session audio for at most an hour, until it's transcribed. noeviction so a full store
   # fails an upload loudly instead of silently dropping a recording.

@@ -1,6 +1,6 @@
 // Plain, serializable shapes the server pages hand to the schedulers, plus shared config.
 
-import type { BryntumSchedulerProps } from '@bryntum/scheduler-react';
+import type { BryntumSchedulerProps } from '@bryntum/scheduler-react-enterprise';
 import { ESCROW_STATE_HEX, type EscrowStateKey } from '@/lib/escrow-states';
 
 export type CalendarTutor = { id: string; name: string; subjects: string[]; priceCents: number };

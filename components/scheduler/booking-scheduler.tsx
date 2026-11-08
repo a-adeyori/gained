@@ -3,10 +3,11 @@
 // Parent booking view: tutors are rows, their open time shows as shaded ranges, and booked
 // sessions are bars coloured by escrow state. Client-only; load it through ./index.
 
-import type { Model } from '@bryntum/scheduler';
-import { BryntumScheduler } from '@bryntum/scheduler-react';
+import type { Model } from '@bryntum/core-enterprise';
+import { BryntumScheduler } from '@bryntum/scheduler-react-enterprise';
 import { useMemo } from 'react';
 import { formatUsd } from '@/lib/escrow-states';
+import './license';
 import './theme';
 import { baseSchedulerProps, OPEN_COLOR, sessionColor, type CalendarRange, type CalendarSession, type CalendarTutor } from './types';
 
