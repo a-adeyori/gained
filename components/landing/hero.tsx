@@ -147,7 +147,7 @@ export function Hero() {
               className={`${styles.fadeUp} mt-7 max-w-xl text-lg leading-relaxed text-ink-soft sm:text-xl`}
               style={{ animationDelay: '700ms' }}
             >
-              Tutor and student meet face to face. Payment waits until a short quiz shows real progress, tutors earn a
+              Tutor and student meet online, on Zoom or Google Meet. Payment waits until a short quiz shows real progress, tutors earn a
               bonus when students improve, and anything unearned goes back to whoever paid.
             </p>
             <div
