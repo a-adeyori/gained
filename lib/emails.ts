@@ -51,6 +51,46 @@ export function bookedEmail(p: {
   };
 }
 
+/**
+ * About an hour before the session, with the meeting link again, since the booking email may be
+ * days old. `warmUpLink` is set when the student hasn't done the warm-up yet.
+ */
+export function reminderEmail(p: {
+  to: 'payer' | 'student' | 'tutor';
+  subject: string;
+  studentName: string;
+  tutorName: string;
+  startAt: Date;
+  meetingLink: string | null;
+  link: string;
+  warmUpLink: string | null;
+}): Mail {
+  const at = when(p.startAt);
+  const where = p.meetingLink ? `\n\nJoin online: ${p.meetingLink}` : '';
+  if (p.to === 'tutor') {
+    return {
+      subject: `Starting soon: ${p.subject} with ${p.studentName}`,
+      text: `Your ${p.subject} session with ${p.studentName} starts ${at}.${where}\n\nOpen the session room when you start, and write what you taught before you end it. The quiz is written from it:\n${p.link}${sign}`,
+    };
+  }
+  if (p.to === 'student') {
+    const warmUp = p.warmUpLink
+      ? `\n\nYou haven't done your warm-up quiz yet. It takes under 5 minutes and shows where you're starting, so your progress can be measured:\n${p.warmUpLink}`
+      : '';
+    return {
+      subject: `Starting soon: ${p.subject} with ${first(p.tutorName)}`,
+      text: `Hi ${first(p.studentName)},\n\nYour ${p.subject} session with ${p.tutorName} starts ${at}.${where}${warmUp}${sign}`,
+    };
+  }
+  const warmUp = p.warmUpLink
+    ? `\n\n${first(p.studentName)} hasn't done the warm-up quiz yet. It's in their email and on the session page, and it's open until 15 minutes into the session.`
+    : '';
+  return {
+    subject: `Starting soon: ${p.subject} with ${p.tutorName}`,
+    text: `${first(p.studentName)}'s ${p.subject} session with ${p.tutorName} starts ${at}.${where}${warmUp}\n\n${p.link}${sign}`,
+  };
+}
+
 export function quizEmail(p: {
   kind: 'baseline' | 'post' | 'retention';
   studentName: string;
