@@ -4,7 +4,7 @@
 
 import { db } from './db';
 import { baseCentsFor } from './payout';
-import { bookedEmail, confirmHappenedEmail, familyEmail, quizEmail, settledEmail, topicsReadyEmail } from './emails';
+import { bookedEmail, confirmHappenedEmail, familyEmail, quizEmail, reminderEmail, settledEmail, topicsReadyEmail } from './emails';
 import { appUrl, sendEmail } from './mail';
 import { quizToken } from './signing';
 
@@ -27,6 +27,21 @@ export const notifyBooked = (sessionId: string) =>
     await sendEmail({ to: s.tutor.email, ...bookedEmail({ ...common, to: 'tutor', link: appUrl('/home') }) });
     if (s.student_id !== s.payer_id) {
       await sendEmail({ to: s.student.email, ...bookedEmail({ ...common, to: 'student', link: appUrl('/home') }) });
+    }
+  });
+
+/** About an hour before the session: the meeting link again, and a nudge if the warm-up is still open. */
+export const notifyReminder = (sessionId: string) =>
+  safely('reminder', async () => {
+    const s = await db.session.findUniqueOrThrow({ where: { id: sessionId }, include: { ...withPeople, quizzes: true } });
+    const baseline = s.quizzes.find((q) => q.kind === 'baseline');
+    const warmUpLink = baseline?.sent_at && !baseline.completed_at ? appUrl(`/quiz/${baseline.id}?t=${quizToken(baseline.id)}`) : null;
+    const common = { subject: s.subject, studentName: s.student.name, tutorName: s.tutor.name, startAt: s.start_at, meetingLink: s.tutor.meeting_link, warmUpLink };
+    await sendEmail({ to: s.tutor.email, ...reminderEmail({ ...common, to: 'tutor', link: appUrl(`/sessions/${s.id}/live`) }) });
+    await sendEmail({ to: s.student.email, ...reminderEmail({ ...common, to: 'student', link: appUrl('/home') }) });
+    // A parent who booked for themselves is the student, and already has the student's email.
+    if (s.student_id !== s.payer_id) {
+      await sendEmail({ to: s.payer.email, ...reminderEmail({ ...common, to: 'payer', link: appUrl(`/sessions/${s.id}`) }) });
     }
   });
 

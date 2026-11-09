@@ -1,4 +1,5 @@
 // The work that runs every 15 minutes (nothing else can wait 48 hours):
+//   0. emails a "starting soon" reminder with the meeting link about an hour before a session;
 //   1. counts a session as confirmed by the family 24 hours after the tutor ended it,
 //      and releases the base;
 //   2. sends retention quizzes 48 hours after the session ends, open for 12 hours;
@@ -9,20 +10,49 @@
 
 import { db } from './db';
 import { startJob } from './jobs';
-import { notifyQuiz } from './notify';
+import { notifyQuiz, notifyReminder } from './notify';
 import { AUTO_CONFIRM_HOURS, readyToSettle, retentionAction, retentionClosesAt } from './retention';
 
 const HOUR = 3_600_000;
+/** Reminders go out once a session is this close; with a 15-minute cron, 45-60 minutes ahead. */
+const REMINDER_MINUTES = 60;
+/** Bookings made closer to the start than this just got the booking email, so they skip the reminder. */
+const REMINDER_MIN_LEAD_HOURS = 2;
 
 type Options = { now?: Date; /** Await each job (inline mode in a script that exits when done). */ wait?: boolean };
-export type ScheduledResult = { autoConfirmed: number; retentionSent: number; settling: number };
+export type ScheduledResult = { remindersSent: number; autoConfirmed: number; retentionSent: number; settling: number };
 
 export async function runScheduledTasks({ now = new Date(), wait = false }: Options = {}): Promise<ScheduledResult> {
   return {
+    remindersSent: await sendReminders(now),
     autoConfirmed: await autoConfirm(now, wait),
     retentionSent: await sendRetentionQuizzes(now),
     settling: await settleDue(now, wait),
   };
+}
+
+async function sendReminders(now: Date) {
+  const due = await db.session.findMany({
+    where: {
+      // Booked and paid for (the hold was approved), starting within the hour, not yet reminded.
+      status: 'booked',
+      escrow: { isNot: null },
+      reminder_sent_at: null,
+      start_at: { gt: now, lte: new Date(now.getTime() + REMINDER_MINUTES * 60_000) },
+    },
+    select: { id: true, start_at: true, created_at: true },
+  });
+  let sent = 0;
+  for (const s of due) {
+    if (s.start_at.getTime() - s.created_at.getTime() < REMINDER_MIN_LEAD_HOURS * HOUR) continue;
+    // Claimed before sending, so two overlapping runs can't both send it.
+    const claimed = await db.session.updateMany({ where: { id: s.id, reminder_sent_at: null }, data: { reminder_sent_at: now } });
+    if (!claimed.count) continue;
+    await notifyReminder(s.id);
+    console.log(`sent reminder for ${s.id}`);
+    sent++;
+  }
+  return sent;
 }
 
 async function autoConfirm(now: Date, wait: boolean) {

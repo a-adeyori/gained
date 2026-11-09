@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { bookedEmail, confirmHappenedEmail, familyEmail, quizEmail, settledEmail, topicsReadyEmail } from '../lib/emails';
+import { bookedEmail, confirmHappenedEmail, familyEmail, quizEmail, reminderEmail, settledEmail, topicsReadyEmail } from '../lib/emails';
 
 const startAt = new Date('2026-10-22T21:00:00Z');
 const people = { subject: 'Chemistry', studentName: 'Ada Lovelace', tutorName: 'Maya Okafor' };
@@ -17,6 +17,24 @@ test('booking emails tell each person what matters to them', () => {
   for (const mail of [payer, tutor, student]) assert.match(mail.text, /Join online: https:\/\/zoom\.us\/j\/1234567890/);
   const noLink = bookedEmail({ ...people, to: 'payer', startAt, priceCents: 6000, meetingLink: null, link: 'L' });
   assert.doesNotMatch(noLink.text, /Join online:/);
+});
+
+test('reminders carry the meeting link, and nudge about a warm-up that is still open', () => {
+  const base = { ...people, startAt, meetingLink: 'https://meet.google.com/abc-defg-hij', link: 'L' };
+  const tutor = reminderEmail({ ...base, to: 'tutor', warmUpLink: null });
+  assert.equal(tutor.subject, 'Starting soon: Chemistry with Ada Lovelace');
+  assert.match(tutor.text, /write what you taught/);
+  const student = reminderEmail({ ...base, to: 'student', warmUpLink: 'W' });
+  assert.equal(student.subject, 'Starting soon: Chemistry with Maya');
+  assert.match(student.text, /^Hi Ada,/);
+  assert.match(student.text, /haven't done your warm-up quiz yet[\s\S]*\nW/);
+  const payer = reminderEmail({ ...base, to: 'payer', warmUpLink: 'W' });
+  assert.match(payer.text, /^Ada's Chemistry session with Maya Okafor starts/);
+  assert.match(payer.text, /Ada hasn't done the warm-up quiz yet/);
+  assert.doesNotMatch(payer.text, /\nW\n/); // the parent gets a nudge, not the student's quiz link
+  for (const mail of [tutor, student, payer]) assert.match(mail.text, /Join online: https:\/\/meet\.google\.com\/abc-defg-hij/);
+  const warmUpDone = reminderEmail({ ...base, to: 'student', warmUpLink: null });
+  assert.doesNotMatch(warmUpDone.text, /warm-up/);
 });
 
 test('each quiz email carries its link, and the check-in says when it closes', () => {
