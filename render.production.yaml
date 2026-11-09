@@ -1,5 +1,5 @@
 # Gained on Render, PRODUCTION (paid plans): web service (Next.js), workflow service (post-session
-# pipeline and every capture), cron job (retention quizzes and settlement), Postgres and Key Value.
+# pipeline and every capture), cron job (retention quizzes and settlement) and Postgres.
 # render.yaml is the free-plan version used for the hackathon. To switch, replace render.yaml
 # with this file (or point the Blueprint at it) and add a payment method in Render.
 # Secrets marked `sync: false` are entered in the Render dashboard when the Blueprint is created.
@@ -27,11 +27,6 @@ services:
         fromDatabase:
           name: gained-db
           property: connectionString
-      - key: REDIS_URL
-        fromService:
-          type: keyvalue
-          name: gained-kv
-          property: connectionString
       - key: SESSION_SECRET
         generateValue: true
       - key: RENDER_WORKFLOW_SLUG
@@ -45,8 +40,6 @@ services:
       - key: PAYPAL_SECRET
         sync: false
       - key: NEXT_PUBLIC_PAYPAL_CLIENT_ID
-        sync: false
-      - key: ANTHROPIC_API_KEY
         sync: false
       # Quizzes, topics and grading run through Elastic (lib/elastic.ts).
       - key: ELASTIC_URL
@@ -80,25 +73,16 @@ services:
         fromDatabase:
           name: gained-db
           property: connectionString
-      - key: REDIS_URL
-        fromService:
-          type: keyvalue
-          name: gained-kv
-          property: connectionString
       - key: PAYPAL_ENV
         value: live
       - key: PAYPAL_CLIENT_ID
         sync: false
       - key: PAYPAL_SECRET
         sync: false
-      - key: ANTHROPIC_API_KEY
-        sync: false
       # Quizzes, topics and grading run through Elastic (lib/elastic.ts).
       - key: ELASTIC_URL
         sync: false
       - key: ELASTIC_API_KEY
-        sync: false
-      - key: OPENAI_API_KEY
         sync: false
       # Quiz links in emails are signed with the web service's secret.
       - key: SESSION_SECRET
@@ -153,12 +137,3 @@ services:
       # The web service's public URL, for links in emails (the web service has RENDER_EXTERNAL_URL).
       - key: APP_URL
         sync: false
-
-  # Holds session audio and photos for at most an hour. noeviction so memory pressure fails
-  # an upload loudly instead of silently dropping a recording.
-  - type: keyvalue
-    name: gained-kv
-    plan: starter
-    region: oregon
-    maxmemoryPolicy: noeviction
-    ipAllowList: []

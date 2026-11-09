@@ -1,5 +1,5 @@
 // Privacy policy (draft). Every statement here describes what the code actually does; keep it
-// in step when data handling changes (lib/media.ts, lib/escrow.ts settle, lib/auth.ts).
+// in step when data handling changes (lib/pipeline.ts, lib/escrow.ts settle, lib/auth.ts).
 
 import type { Metadata } from 'next';
 import { LegalPage } from '@/components/legal-page';
@@ -12,7 +12,7 @@ export default function PrivacyPage() {
       <section>
         <p>
           Gained is run by <strong>[Company legal name]</strong>. This policy explains what we collect when you use Gained,
-          why, who we share it with, and how long we keep it. Questions or requests: <strong>[privacy contact email]</strong>.
+          why, who we share it with, and how long we keep it. Questions or requests: <a href="mailto:adeyori.adekunle@bulldogs.aamu.edu" className="underline underline-offset-4 hover:text-ink">adeyori.adekunle@bulldogs.aamu.edu</a>.
         </p>
       </section>
 
@@ -31,7 +31,7 @@ export default function PrivacyPage() {
         <ul>
           <li><strong>Account details:</strong> name, email, password (stored only as a one-way hash), and your role. For students, whether they’re under 18, and who their parent is.</li>
           <li><strong>Tutor profile:</strong> subjects, price, bio, their Zoom or Google Meet link (shown to families who book them), availability, and the PayPal email payouts go to.</li>
-          <li><strong>Sessions:</strong> subject, time, what the family planned to cover, the topics the tutor confirmed, the tutor’s summary of what they taught, and any photos of worked problems the tutor uploads (deleted once processed, within one hour).</li>
+          <li><strong>Sessions:</strong> subject, time, what the family planned to cover, the topics the tutor confirmed, and the tutor’s summary of what they taught.</li>
           <li><strong>Quizzes:</strong> questions, answers, scores, and the reasoning behind each grade. These make up the results families and tutors see, and are needed to review appeals.</li>
           <li><strong>Payments:</strong> PayPal handles all card and bank details; we never see them. We keep PayPal’s order, authorization, capture and payout IDs, and the amounts.</li>
           <li><strong>Daily problem:</strong> students’ answers and streaks.</li>
@@ -43,8 +43,7 @@ export default function PrivacyPage() {
         <p>Only the services that make Gained work, each for its one job:</p>
         <ul>
           <li><strong>PayPal:</strong> holding, capturing and refunding payments, and paying tutors.</li>
-          <li><strong>Elastic</strong> (its managed AI, which runs Anthropic’s Claude): writing the warm-up quiz from what the family entered, working out what a session covered from the tutor’s summary, writing the later quizzes, and grading answers.</li>
-          <li><strong>Anthropic (Claude):</strong> answering tutors’ questions about their own dashboard.</li>
+          <li><strong>Elastic</strong> (its managed AI, which runs Anthropic’s Claude): writing the warm-up quiz from what the family entered, working out what a session covered from the tutor’s summary, writing the later quizzes, grading answers, and answering tutors’ questions about their own dashboard.</li>
           <li><strong>Brevo:</strong> sending email (quiz links, booking and results notices, sign-in links).</li>
           <li><strong>Render:</strong> hosting the app and its database, in the United States.</li>
         </ul>
@@ -63,7 +62,6 @@ export default function PrivacyPage() {
       <section>
         <h2>How long we keep it</h2>
         <ul>
-          <li>Photos of worked problems: deleted once processed (at most one hour).</li>
           <li>Accounts, sessions, quiz results and payment records: while your account is open, and afterwards as long as needed for accounting and legal obligations: <strong>[retention period]</strong>.</li>
         </ul>
       </section>
@@ -80,7 +78,7 @@ export default function PrivacyPage() {
         <h2>Your choices</h2>
         <ul>
           <li>You can see your sessions, results and how every answer was graded in the app, and appeal a grade within 72 hours.</li>
-          <li>To get a copy of your data or delete your account, email <strong>[privacy contact email]</strong>.</li>
+          <li>To get a copy of your data or delete your account, email <a href="mailto:adeyori.adekunle@bulldogs.aamu.edu" className="underline underline-offset-4 hover:text-ink">adeyori.adekunle@bulldogs.aamu.edu</a>.</li>
         </ul>
       </section>
     </LegalPage>

@@ -9,18 +9,10 @@ import {
   prepareQuizzesStep,
   releasePaymentStep,
   settleSessionStep,
-  transcribeAudioStep,
   writeBaselineStep,
 } from '../lib/pipeline';
 
 const retry = { maxRetries: 3, waitDurationMs: 5000, backoffScaling: 2 };
-
-export const transcribeAudio = task(
-  { name: 'transcribeAudio', retry, timeoutSeconds: 1800 },
-  async (_ctx: TaskContext, sessionId: string) => {
-    await transcribeAudioStep(sessionId);
-  },
-);
 
 export const extractTopics = task(
   { name: 'extractTopics', retry, timeoutSeconds: 600 },
@@ -32,7 +24,6 @@ export const extractTopics = task(
 export const processSession = task(
   { name: 'processSession', timeoutSeconds: 3600 },
   async (ctx: TaskContext, sessionId: string) => {
-    await ctx.run(transcribeAudio, sessionId);
     await ctx.run(extractTopics, sessionId);
   },
 );

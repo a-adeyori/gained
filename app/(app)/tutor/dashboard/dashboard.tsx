@@ -26,7 +26,7 @@ if (process.env.NODE_ENV !== 'production') {
 
 type DashboardProps = {
   licenseKey?: string;
-  /** Whether the AI assistant can run: an AG Studio licence and ANTHROPIC_API_KEY are both set. */
+  /** Whether the AI assistant can run: an AG Studio licence and Elastic (ELASTIC_URL, ELASTIC_API_KEY) are both set. */
   aiEnabled: boolean;
   /** First and last session dates, 'YYYY-MM-DD'. */
   from: string;

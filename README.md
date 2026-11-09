@@ -7,8 +7,8 @@ Built for the PayPal AI Hackathon (Build What's Next with PayPal and AI). All pa
 ## How a session flows
 
 1. **Booking.** A parent picks a slot in the tutor's Bryntum calendar and approves a PayPal hold (`intent: AUTHORIZE`) for the full price. A 5-question baseline is written from the tutor's planned topics.
-2. **Session.** The tutor records audio in the browser (with consent), adds photos of worked problems, or types 3–5 bullet points.
-3. **After the session.** The Render workflow transcribes the audio (OpenAI `gpt-transcribe`), extracts what was covered (Claude, with the photos), and the tutor confirms the topic list in one tap. Claude writes a post-session quiz and a retention quiz, and a second Claude call checks each one.
+2. **Session.** Tutor and student meet online on the tutor's Zoom or Google Meet link. Sessions aren't recorded; afterwards the tutor writes a short summary of what they taught.
+3. **After the session.** The Render workflow works out what was covered from the tutor's summary (Claude, through Elastic), and the tutor confirms the topic list in one tap. Claude writes a post-session quiz and a retention quiz, and a second Claude call checks each one.
 4. **Base.** Once both sides confirm the session happened (the family's side is automatic after 24 hours, or when the student takes the quiz), the 80% base is captured with `final_capture: false` and paid to the tutor through Payouts.
 5. **Retention.** The cron job sends the retention quiz 48 hours after the session. It closes 12 hours later; an unanswered quiz is scored at the tutor's rolling average gain.
 6. **Settlement.** After the 72-hour appeal window, the bonus is captured with `final_capture: true` (which releases the rest to the parent), or the hold is voided if no bonus was earned.
@@ -36,7 +36,7 @@ Holds older than 72 hours are reauthorized once, immediately before a capture (`
 
 ## Run it locally
 
-Needs Node.js 20.9 or later, a Postgres database, and a Redis-compatible Key Value store (for example `docker run -p 6379:6379 valkey/valkey`).
+Needs Node.js 20.9 or later and a Postgres database (`npm run services` starts one in Docker).
 
 ```bash
 npm install
@@ -65,14 +65,13 @@ PayPal only allows reauthorizing after the 3-day honor period, so a same-day rea
 
 ## Deploy to Render
 
-`render.yaml` defines the web service, the workflow service (`gained-workflow`), the cron job, Postgres and Key Value. Create a Blueprint from this repo and fill in the secrets it asks for. The web service runs migrations before each deploy.
+`render.yaml` defines the web service, the workflow service (`gained-workflow`), the cron job and Postgres. Create a Blueprint from this repo and fill in the secrets it asks for. The web service runs migrations before each deploy.
 
 ## Built with
 
 - **PayPal** Orders v2 (authorize, capture, void, reauthorize) and Payouts, all server-side in `lib/paypal.ts`.
-- **Claude** (`claude-sonnet-5-5` for topics, quizzes and grading; `claude-haiku-5-5` for the quiz check; `claude-opus-5-5` for the dashboard assistant).
-- **OpenAI** `gpt-transcribe` for speech-to-text.
-- **Render** web service, Workflows, Cron Job, Postgres and Key Value.
+- **Claude Sonnet 4.5 through Elastic**'s managed LLMs (`lib/elastic.ts`) for every AI step: topics, quizzes, grading and the tutor dashboard's assistant.
+- **Render** web service, Workflows, Cron Job and Postgres.
 - **AG Studio** for the tutor dashboard and its AI assistant.
 - **Bryntum Scheduler** for booking and availability.
 - **APIMatic Context Plugin**: not set up yet. Install it (`npx context-plugins install paypal`) and use it for PayPal work before claiming the APIMatic prize.
