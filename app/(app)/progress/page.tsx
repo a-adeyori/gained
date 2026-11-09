@@ -140,7 +140,7 @@ export default async function ProgressPage() {
                       <span className="num text-sm font-medium text-gain-ink">+{Math.round(r.gain_quiz * 100)}% gain</span>
                     )}
                     <Money cents={s.price_cents} className="text-sm text-ink-soft" />
-                    <EscrowBadge state={s.escrow!.state as EscrowStateKey} />
+                    <EscrowBadge state={s.escrow!.state as EscrowStateKey} checkInDone={s.result?.retention_score != null} />
                   </div>
                 </Link>
               </li>

@@ -10,7 +10,7 @@ import { EscrowBadge, Money } from '@/components/ui';
 import { requireUser, type CurrentUser } from '@/lib/auth';
 import { normalizeSubjects } from '@/lib/booking';
 import { db } from '@/lib/db';
-import type { EscrowStateKey } from '@/lib/escrow-states';
+import { checkInDone, type EscrowStateKey } from '@/lib/escrow-states';
 import { nextStep, stageOf, stageStatuses, type NextStep } from '@/lib/journey';
 import { quizToken } from '@/lib/signing';
 import { DailyCard } from './daily-card';
@@ -210,11 +210,15 @@ function SessionList({ title, sessions, viewer, steps }: { title: string; sessio
                 <div className="flex items-center gap-3 sm:justify-end">
                   {s.result?.pre_score != null && s.result?.post_score != null && (
                     <span className="num whitespace-nowrap text-sm text-ink-soft">
-                      {Math.round(s.result.pre_score)}% → <span className="font-medium text-gain-ink">{Math.round(s.result.post_score)}%</span>
+                      {Math.round(s.result.pre_score)}% →{' '}
+                      {/* Green means progress, so only an improved score is green. */}
+                      <span className={`font-medium ${s.result.post_score > s.result.pre_score ? 'text-gain-ink' : 'text-ink'}`}>
+                        {Math.round(s.result.post_score)}%
+                      </span>
                     </span>
                   )}
                   <Money cents={s.price_cents} className="text-sm text-ink-soft" />
-                  {s.escrow && <EscrowBadge state={s.escrow.state as EscrowStateKey} />}
+                  {s.escrow && <EscrowBadge state={s.escrow.state as EscrowStateKey} checkInDone={checkInDone(s.quizzes.find((q) => q.kind === 'retention'))} />}
                 </div>
               </Link>
             </li>

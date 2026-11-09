@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import type { ComponentProps, ReactNode } from 'react';
-import { ESCROW_STATES, formatUsd, type EscrowStateKey } from '@/lib/escrow-states';
+import { ESCROW_STATES, FINALISING, formatUsd, type EscrowStateKey } from '@/lib/escrow-states';
 import { meetingService } from '@/lib/meeting';
 
 const cx = (...parts: (string | false | null | undefined)[]) => parts.filter(Boolean).join(' ');
@@ -49,8 +49,9 @@ export function Money({ cents, className }: { cents: number; className?: string 
   return <span className={cx('num', className)}>{formatUsd(cents)}</span>;
 }
 
-export function EscrowBadge({ state }: { state: EscrowStateKey }) {
-  const s = ESCROW_STATES[state];
+/** `checkInDone`: show "Finalising" instead of "Awaiting retention quiz" (see FINALISING). */
+export function EscrowBadge({ state, checkInDone = false }: { state: EscrowStateKey; checkInDone?: boolean }) {
+  const s = state === 'awaiting_retention' && checkInDone ? { ...ESCROW_STATES[state], ...FINALISING } : ESCROW_STATES[state];
   return (
     <span
       title={s.explain}

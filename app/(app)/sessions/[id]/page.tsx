@@ -13,7 +13,7 @@ import { canViewSession, requireUser } from '@/lib/auth';
 import type { Question } from '@/lib/claude';
 import { db } from '@/lib/db';
 import { tutorAverageGain } from '@/lib/escrow';
-import { ESCROW_STATES, type EscrowStateKey } from '@/lib/escrow-states';
+import { checkInDone, ESCROW_STATES, type EscrowStateKey } from '@/lib/escrow-states';
 import { baseCentsFor, computeSplit } from '@/lib/payout';
 import { nextStep, stageOf, stageStatuses } from '@/lib/journey';
 import { appealWindowClosesAt } from '@/lib/retention';
@@ -54,6 +54,11 @@ export default async function SessionPage({ params }: PageProps<'/sessions/[id]'
   const isTutor = user.id === session.tutor_id;
   const isFamily = [session.payer_id, session.student_id].includes(user.id);
   const now = new Date();
+  // After the check-in, the escrow still says "awaiting retention" until settlement; say what's really next.
+  const finalising = state === 'awaiting_retention' && checkInDone(quiz('retention'), now) && session.ended_at !== null;
+  const stateExplain = finalising
+    ? `The 48-hour check-in is done. The final payment goes through once the appeal window closes on ${dateTime(appealWindowClosesAt(session.ended_at!))}.`
+    : ESCROW_STATES[state].explain;
 
   // The split: final once settled; decided if an appeal set the tutor's pay (settlement pays
   // exactly that, lib/escrow.ts); otherwise an estimate from the scores so far.
@@ -102,8 +107,8 @@ export default async function SessionPage({ params }: PageProps<'/sessions/[id]'
           {session.subject} with {isTutor ? session.student.name : session.tutor.name}
         </h1>
         <div className="mt-3 flex flex-wrap items-center gap-3">
-          <EscrowBadge state={state} />
-          <span className="text-sm text-ink-soft">{ESCROW_STATES[state].explain}</span>
+          <EscrowBadge state={state} checkInDone={finalising} />
+          <span className="text-sm text-ink-soft">{stateExplain}</span>
         </div>
         {/* Until the session ends, the tutor's meeting link is how everyone gets there. */}
         {!session.ended_at && session.status !== 'cancelled' && <JoinMeeting link={session.tutor.meeting_link} className="mt-5" />}
