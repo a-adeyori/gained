@@ -8,7 +8,7 @@ import { JourneyBar, NextStepCard } from '@/components/journey';
 import { MathText } from '@/components/math-text';
 import { MoneySplit } from '@/components/money-split';
 import { ScoreBar } from '@/components/score-bar';
-import { Button, ButtonLink, Card, EscrowBadge, HeldNotCharged, Money } from '@/components/ui';
+import { Button, ButtonLink, Card, EscrowBadge, HeldNotCharged, JoinMeeting, Money } from '@/components/ui';
 import { canViewSession, requireUser } from '@/lib/auth';
 import type { Question } from '@/lib/claude';
 import { db } from '@/lib/db';
@@ -92,8 +92,7 @@ export default async function SessionPage({ params }: PageProps<'/sessions/[id]'
     <div className="mx-auto max-w-3xl">
       <header className="mb-8">
         <p className="text-sm font-medium text-muted">
-          {dateTime(session.start_at)}
-          {session.meeting_place && <> · {session.meeting_place}</>}
+          {dateTime(session.start_at)} · Online
         </p>
         <h1 className="mt-1 font-display text-4xl leading-tight tracking-tight sm:text-5xl">
           {session.subject} with {isTutor ? session.student.name : session.tutor.name}
@@ -102,6 +101,8 @@ export default async function SessionPage({ params }: PageProps<'/sessions/[id]'
           <EscrowBadge state={state} />
           <span className="text-sm text-ink-soft">{ESCROW_STATES[state].explain}</span>
         </div>
+        {/* Until the session ends, the tutor's meeting link is how everyone gets there. */}
+        {!session.ended_at && session.status !== 'cancelled' && <JoinMeeting link={session.tutor.meeting_link} className="mt-5" />}
         <div className="mt-8">
           <JourneyBar stages={stageStatuses(session)} />
         </div>

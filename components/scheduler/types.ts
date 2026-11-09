@@ -3,7 +3,10 @@
 import type { BryntumSchedulerProps } from '@bryntum/scheduler-react-enterprise';
 import { ESCROW_STATE_HEX, type EscrowStateKey } from '@/lib/escrow-states';
 
-export type CalendarTutor = { id: string; name: string; subjects: string[]; priceCents: number; serviceArea: string | null };
+import type { MeetingService } from '@/lib/meeting';
+
+/** `meeting` is the service the tutor's link is on; the link itself is shown once booked. */
+export type CalendarTutor = { id: string; name: string; subjects: string[]; priceCents: number; meeting: MeetingService | null };
 
 /** An availability range. Dates are ISO strings. */
 export type CalendarRange = { id: string; tutorId: string; start: string; end: string };

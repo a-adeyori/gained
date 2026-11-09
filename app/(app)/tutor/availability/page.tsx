@@ -55,7 +55,7 @@ export default async function AvailabilityPage() {
       href: ['booked', 'live', 'ended'].includes(s.status) ? `/sessions/${s.id}/live` : `/sessions/${s.id}`,
     }));
 
-  const profileMissing = !user.price_cents || normalizeSubjects(user.subjects).length === 0;
+  const profileMissing = !user.price_cents || normalizeSubjects(user.subjects).length === 0 || !user.meeting_link;
 
   const openSlots = ranges.length;
   const profile = (
@@ -66,7 +66,7 @@ export default async function AvailabilityPage() {
           priceCents={user.price_cents}
           subjects={normalizeSubjects(user.subjects)}
           bio={user.bio ?? ''}
-          serviceArea={user.service_area ?? ''}
+          meetingLink={user.meeting_link ?? ''}
           paypalEmail={user.paypal_email ?? user.email}
         />
       </Card>
@@ -86,7 +86,7 @@ export default async function AvailabilityPage() {
     <>
       <PageTitle eyebrow="Profile & availability" title="When can families book you?" />
 
-      {/* Families only see tutors with a price and at least one subject, so say so loudly. */}
+      {/* Families only see tutors with a price, a subject and a meeting link, so say so loudly. */}
       {profileMissing ? (
         <div
           role="alert"
@@ -99,8 +99,8 @@ export default async function AvailabilityPage() {
           <div>
             <p className="font-display text-2xl tracking-tight">Parents can’t see you yet</p>
             <p className="mt-1 text-ink-soft">
-              Set your <strong className="text-ink">hourly price</strong> and pick at least one <strong className="text-ink">subject</strong>{' '}
-              below.
+              Set your <strong className="text-ink">hourly price</strong>, pick at least one <strong className="text-ink">subject</strong>{' '}
+              and add your <strong className="text-ink">Zoom or Google Meet link</strong> below.
               {openSlots > 0 ? ` Your ${openSlots} open time${openSlots > 1 ? 's' : ''} will show up for families as soon as you save.` : ''}
             </p>
           </div>
