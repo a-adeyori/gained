@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import type { ComponentProps, ReactNode } from 'react';
 import { ESCROW_STATES, formatUsd, type EscrowStateKey } from '@/lib/escrow-states';
+import { meetingService } from '@/lib/meeting';
 
 const cx = (...parts: (string | false | null | undefined)[]) => parts.filter(Boolean).join(' ');
 
@@ -28,6 +29,16 @@ export function Button({ variant = 'primary', className, ...props }: ComponentPr
 
 export function ButtonLink({ variant = 'primary', className, ...props }: ComponentProps<typeof Link> & { variant?: ButtonVariant }) {
   return <Link className={buttonClass(variant, className)} {...props} />;
+}
+
+/** Opens the tutor's Zoom or Google Meet link in a new tab, where sessions happen. */
+export function JoinMeeting({ link, variant = 'primary', className }: { link: string | null; variant?: ButtonVariant; className?: string }) {
+  if (!link) return <p className={cx('text-sm text-muted', className)}>The tutor hasn’t added their meeting link yet.</p>;
+  return (
+    <a href={link} target="_blank" rel="noopener noreferrer" className={buttonClass(variant, className)}>
+      Join on {meetingService(link) ?? 'video'} <span aria-hidden>↗</span>
+    </a>
+  );
 }
 
 export function Card({ className, ...props }: ComponentProps<'div'>) {

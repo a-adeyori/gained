@@ -8,6 +8,7 @@ import { currentUser } from '@/lib/auth';
 import { isBlocking, MAX_PRICE_CENTS, MIN_PRICE_CENTS, normalizeSubjects, overlaps, parseDollars, validateAvailability } from '@/lib/booking';
 import { db } from '@/lib/db';
 import { formatUsd } from '@/lib/escrow-states';
+import { parseMeetingLink } from '@/lib/meeting';
 import { tutorSessionsAround } from '@/app/(app)/book/queries';
 
 export type ActionResult = { error?: string; ok?: boolean } | undefined;
@@ -57,11 +58,11 @@ export async function removeAvailability(id: string): Promise<ActionResult> {
 const Profile = z.object({
   price: z.string(),
   bio: z.string().trim().max(600, 'Keep the bio under 600 characters.'),
-  serviceArea: z
-    .string({ error: 'Say where you meet students, e.g. “Brooklyn, NY”.' })
+  meetingLink: z
+    .string({ error: 'Paste your Zoom or Google Meet link.' })
     .trim()
-    .min(2, 'Say where you meet students, e.g. “Brooklyn, NY”.')
-    .max(80, 'Keep the area under 80 characters.'),
+    .min(1, 'Paste your Zoom or Google Meet link.')
+    .max(300, 'That link is too long.'),
   paypalEmail: z.email('Enter the email of your PayPal account.').transform((e) => e.toLowerCase()),
 });
 
@@ -76,13 +77,15 @@ export async function saveProfile(_prev: ActionResult, form: FormData): Promise<
   }
   const subjects = normalizeSubjects(form.getAll('subjects').map(String));
   if (!subjects.length) return { error: 'Pick at least one subject.' };
+  const link = parseMeetingLink(parsed.data.meetingLink);
+  if (!link.ok) return { error: link.error };
   await db.user.update({
     where: { id: user.id },
     data: {
       price_cents: priceCents,
       subjects,
       bio: parsed.data.bio || null,
-      service_area: parsed.data.serviceArea,
+      meeting_link: link.link,
       paypal_email: parsed.data.paypalEmail,
     },
   });

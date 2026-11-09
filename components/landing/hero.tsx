@@ -108,7 +108,7 @@ export function Hero() {
               style={{ animationDelay: '0ms' }}
             >
               <span className="size-1.5 rounded-full bg-gain" aria-hidden="true" />
-              In-person tutoring, any subject
+              Online tutoring, any subject
             </p>
             <h1
               id="hero-title"

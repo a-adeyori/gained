@@ -7,6 +7,7 @@ import { requireUser } from '@/lib/auth';
 import { isBlocking, normalizeSubjects } from '@/lib/booking';
 import { db } from '@/lib/db';
 import type { EscrowStateKey } from '@/lib/escrow-states';
+import { meetingService } from '@/lib/meeting';
 import { BookingBoardLoader } from './board-loader';
 
 export const metadata: Metadata = { title: 'Book a tutor' };
@@ -20,13 +21,14 @@ export default async function BookPage() {
 
   const [tutorRows, sessionRows, children] = await Promise.all([
     db.user.findMany({
-      where: { role: 'tutor', price_cents: { gt: 0 } },
+      // Sessions are online, so a tutor without a meeting link can't be booked.
+      where: { role: 'tutor', price_cents: { gt: 0 }, meeting_link: { not: null } },
       select: {
         id: true,
         name: true,
         subjects: true,
         price_cents: true,
-        service_area: true,
+        meeting_link: true,
         availability: { where: { end_at: { gt: now }, start_at: { lt: until } }, orderBy: { start_at: 'asc' } },
       },
       orderBy: { name: 'asc' },
@@ -55,7 +57,7 @@ export default async function BookPage() {
       name: t.name,
       subjects: normalizeSubjects(t.subjects),
       priceCents: t.price_cents ?? 0,
-      serviceArea: t.service_area,
+      meeting: t.meeting_link ? meetingService(t.meeting_link) : null,
     }))
     .filter((t) => t.subjects.length > 0);
   const tutorIds = new Set(tutors.map((t) => t.id));

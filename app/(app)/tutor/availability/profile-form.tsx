@@ -1,7 +1,7 @@
 'use client';
 
-// The tutor's booking profile: hourly price, subjects, the area they meet students in, bio and
-// the PayPal email for payouts.
+// The tutor's booking profile: hourly price, subjects, the meeting link sessions happen on, bio
+// and the PayPal email for payouts.
 
 import { useActionState } from 'react';
 import { Button, Field, inputClass, cx } from '@/components/ui';
@@ -12,13 +12,13 @@ export function ProfileForm({
   priceCents,
   subjects,
   bio,
-  serviceArea,
+  meetingLink,
   paypalEmail,
 }: {
   priceCents: number | null;
   subjects: Subject[];
   bio: string;
-  serviceArea: string;
+  meetingLink: string;
   paypalEmail: string;
 }) {
   const [state, action, pending] = useActionState(saveProfile, undefined);
@@ -52,14 +52,18 @@ export function ProfileForm({
         <p className="mt-1 text-xs text-muted">Pick every subject you teach. Families filter tutors by subject.</p>
       </fieldset>
 
-      <Field label="Where you meet students" hint="Sessions are in person. Families see this when booking, and choose the exact place.">
+      <Field
+        label="Your meeting link"
+        hint="Sessions are online. Paste your Zoom Personal Room or Google Meet link once; families get it in their booking email and on every session page."
+      >
         <input
-          name="serviceArea"
+          name="meetingLink"
+          inputMode="url"
           required
-          maxLength={80}
-          defaultValue={serviceArea}
-          placeholder="e.g. Brooklyn, NY"
-          autoComplete="address-level2"
+          maxLength={300}
+          defaultValue={meetingLink}
+          placeholder="https://zoom.us/j/1234567890 or https://meet.google.com/abc-defg-hij"
+          autoComplete="url"
           className={inputClass}
         />
       </Field>

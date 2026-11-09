@@ -8,6 +8,7 @@ import { ButtonLink, Card, Money, PageTitle } from '@/components/ui';
 import { requireUser } from '@/lib/auth';
 import { db } from '@/lib/db';
 import type { EscrowStateKey } from '@/lib/escrow-states';
+import { meetingService } from '@/lib/meeting';
 import { baseCentsFor } from '@/lib/payout';
 import { CheckoutPanel } from './checkout-panel';
 import { LocalTime } from './local-time';
@@ -19,7 +20,7 @@ export default async function CheckoutPage({ params }: PageProps<'/sessions/[id]
   const user = await requireUser();
   const session = await db.session.findUnique({
     where: { id },
-    include: { tutor: { select: { name: true } }, student: { select: { id: true, name: true } }, escrow: { select: { state: true } } },
+    include: { tutor: { select: { name: true, meeting_link: true } }, student: { select: { id: true, name: true } }, escrow: { select: { state: true } } },
   });
   // Anyone but the payer gets a plain 404, so session IDs reveal nothing.
   if (!session || session.payer_id !== user.id) notFound();
@@ -49,7 +50,10 @@ export default async function CheckoutPage({ params }: PageProps<'/sessions/[id]
             <span className="text-muted"> · {minutes} min</span>
           </dd>
           <dt className="text-muted">Where</dt>
-          <dd>{session.meeting_place ?? 'Not set'}</dd>
+          <dd>
+            Online{session.tutor.meeting_link && meetingService(session.tutor.meeting_link) ? ` on ${meetingService(session.tutor.meeting_link)}` : ''}
+            <span className="text-muted"> · the link comes in your booking email once the hold is approved</span>
+          </dd>
           <dt className="text-muted">Subject</dt>
           <dd>{session.subject}</dd>
           <dt className="text-muted">Covering</dt>

@@ -22,7 +22,7 @@ const withPeople = { tutor: true, student: true, payer: true } as const;
 export const notifyBooked = (sessionId: string) =>
   safely('booked', async () => {
     const s = await db.session.findUniqueOrThrow({ where: { id: sessionId }, include: withPeople });
-    const common = { subject: s.subject, studentName: s.student.name, tutorName: s.tutor.name, startAt: s.start_at, priceCents: s.price_cents, meetingPlace: s.meeting_place };
+    const common = { subject: s.subject, studentName: s.student.name, tutorName: s.tutor.name, startAt: s.start_at, priceCents: s.price_cents, meetingLink: s.tutor.meeting_link };
     await sendEmail({ to: s.payer.email, ...bookedEmail({ ...common, to: 'payer', link: appUrl(`/sessions/${s.id}`) }) });
     await sendEmail({ to: s.tutor.email, ...bookedEmail({ ...common, to: 'tutor', link: appUrl('/home') }) });
     if (s.student_id !== s.payer_id) {
