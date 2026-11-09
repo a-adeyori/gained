@@ -55,11 +55,15 @@ export default async function SessionPage({ params }: PageProps<'/sessions/[id]'
   const isFamily = [session.payer_id, session.student_id].includes(user.id);
   const now = new Date();
 
-  // The split: final once settled; otherwise an estimate from the scores so far.
+  // The split: final once settled; decided if an appeal set the tutor's pay (settlement pays
+  // exactly that, lib/escrow.ts); otherwise an estimate from the scores so far.
   const base = baseCentsFor(session.price_cents);
+  const overrideCents = result?.override_tutor_pay_cents ?? null;
   let split: { bonus: number; returned: number; provisional: boolean } | null = null;
   if ((state === 'settled' || state === 'returned') && result?.tutor_pay_cents != null) {
     split = { bonus: result.tutor_pay_cents - base, returned: escrow.returned_cents ?? session.price_cents - result.tutor_pay_cents, provisional: false };
+  } else if (overrideCents !== null) {
+    split = { bonus: overrideCents - base, returned: session.price_cents - overrideCents, provisional: false };
   } else if (result?.pre_score != null && result.post_score != null) {
     const estimate = computeSplit({
       priceCents: session.price_cents,
@@ -234,7 +238,19 @@ export default async function SessionPage({ params }: PageProps<'/sessions/[id]'
           .map((a) => (
             <Card key={a.id}>
               <p className="font-medium">Appeal {a.status === 'upheld' ? 'reviewed: grade stands' : 'reviewed: payment adjusted'}</p>
-              {a.resolution && <p className="mt-1 text-sm text-ink-soft">{a.resolution}</p>}
+              {a.status === 'adjusted' && overrideCents !== null && (
+                <p className="mt-1 text-sm">
+                  The tutor’s pay for this session is now <Money cents={overrideCents} className="font-semibold" /> of the{' '}
+                  <Money cents={session.price_cents} /> price
+                  {overrideCents < session.price_cents ? (
+                    <>
+                      ; <Money cents={session.price_cents - overrideCents} className="font-semibold" /> comes back to the family
+                    </>
+                  ) : null}
+                  . {state === 'settled' || state === 'returned' ? 'Paid out at settlement.' : 'It goes through at settlement, after the appeal window.'}
+                </p>
+              )}
+              {a.resolution && <p className="mt-1 text-sm text-ink-soft">“{a.resolution}”</p>}
             </Card>
           ))}
 
