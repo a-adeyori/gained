@@ -210,7 +210,11 @@ function SessionList({ title, sessions, viewer, steps }: { title: string; sessio
                 <div className="flex items-center gap-3 sm:justify-end">
                   {s.result?.pre_score != null && s.result?.post_score != null && (
                     <span className="num whitespace-nowrap text-sm text-ink-soft">
-                      {Math.round(s.result.pre_score)}% → <span className="font-medium text-gain-ink">{Math.round(s.result.post_score)}%</span>
+                      {Math.round(s.result.pre_score)}% →{' '}
+                      {/* Green means progress, so only an improved score is green. */}
+                      <span className={`font-medium ${s.result.post_score > s.result.pre_score ? 'text-gain-ink' : 'text-ink'}`}>
+                        {Math.round(s.result.post_score)}%
+                      </span>
                     </span>
                   )}
                   <Money cents={s.price_cents} className="text-sm text-ink-soft" />
