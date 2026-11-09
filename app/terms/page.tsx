@@ -9,7 +9,7 @@ export const metadata: Metadata = { title: 'Terms of service' };
 
 export default function TermsPage() {
   return (
-    <LegalPage title="Terms of service" updated="November 8, 2026">
+    <LegalPage title="Terms of service" updated="November 9, 2026">
       <section>
         <p>
           These terms are an agreement between you and <strong>[Company legal name]</strong> (“Gained”). By creating an account
@@ -87,7 +87,7 @@ export default function TermsPage() {
           <li>
             <strong>[Limitation of liability, disputes and governing law to be drafted by counsel.]</strong>
           </li>
-          <li>Questions: <strong>[contact email]</strong>.</li>
+          <li>Questions: <a href="mailto:adeyori.adekunle@bulldogs.aamu.edu" className="underline underline-offset-4 hover:text-ink">adeyori.adekunle@bulldogs.aamu.edu</a>.</li>
         </ul>
       </section>
     </LegalPage>

@@ -6,6 +6,7 @@ import type { Metadata } from 'next';
 import { ButtonLink, Card, PageTitle } from '@/components/ui';
 import { requireUser } from '@/lib/auth';
 import { db } from '@/lib/db';
+import { elasticConfigured } from '@/lib/elastic';
 import { TutorDashboard } from './dashboard/dashboard';
 
 export const metadata: Metadata = { title: 'Dashboard' };
@@ -39,9 +40,9 @@ export default async function TutorDashboardPage() {
     );
   }
 
-  // The AI module needs an AG Studio licence, and the proxy needs the Anthropic key. Only booleans
-  // reach the browser; the key stays on the server.
-  const aiEnabled = Boolean(process.env.AG_STUDIO && process.env.ANTHROPIC_API_KEY);
+  // The AI module needs an AG Studio licence, and the proxy needs Elastic (lib/elastic.ts). Only
+  // booleans reach the browser; the key stays on the server.
+  const aiEnabled = Boolean(process.env.AG_STUDIO) && elasticConfigured();
 
   return (
     <>

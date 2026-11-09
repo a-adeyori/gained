@@ -1,11 +1,11 @@
-# Gained on Render, FREE plan (the hackathon deployment): one web service, Postgres and Key Value.
+# Gained on Render, FREE plan (the hackathon deployment): one web service and Postgres.
 #
 # Render's free plan has no workflow or cron services, so:
-#   - background jobs (quiz writing, transcription, captures, payouts) run inside the web service
+#   - background jobs (quiz writing, captures, payouts) run inside the web service
 #     (WORKFLOW_MODE=inline, lib/jobs.ts);
 #   - the every-15-minutes work runs via POST /api/cron, called by a scheduled GitHub Action
 #     (.github/workflows/scheduled-tasks.yml), which also keeps the free web service awake.
-# Free limits: the database expires 30 days after creation; Key Value is in-memory only.
+# Free limits: the database expires 30 days after creation.
 # render.production.yaml is the paid setup with a separate workflow service and cron job.
 # Secrets marked `sync: false` are entered in the Render dashboard when the Blueprint is created;
 # leave any you don't have yet blank and add them later under the service's Environment tab.
@@ -33,11 +33,6 @@ services:
         fromDatabase:
           name: gained-db
           property: connectionString
-      - key: REDIS_URL
-        fromService:
-          type: keyvalue
-          name: gained-kv
-          property: connectionString
       - key: SESSION_SECRET
         generateValue: true
       # Shared with the GitHub Action that calls /api/cron.
@@ -51,14 +46,10 @@ services:
         sync: false
       - key: NEXT_PUBLIC_PAYPAL_CLIENT_ID
         sync: false
-      - key: ANTHROPIC_API_KEY
-        sync: false
       # Quizzes, topics and grading run through Elastic (lib/elastic.ts).
       - key: ELASTIC_URL
         sync: false
       - key: ELASTIC_API_KEY
-        sync: false
-      - key: OPENAI_API_KEY
         sync: false
       # Email (lib/mail.ts). Set BREVO_API_KEY or RESEND_API_KEY; without either, emails go to the
       # service log instead.
@@ -73,12 +64,3 @@ services:
       # Bryntum licence key for the booking and availability calendars (components/scheduler/license.ts).
       - key: NEXT_PUBLIC_BRYNTUM_LICENSE_KEY
         sync: false
-
-  # Holds session audio for at most an hour, until it's transcribed. noeviction so a full store
-  # fails an upload loudly instead of silently dropping a recording.
-  - type: keyvalue
-    name: gained-kv
-    plan: free
-    region: oregon
-    maxmemoryPolicy: noeviction
-    ipAllowList: []

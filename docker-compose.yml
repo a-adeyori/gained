@@ -1,6 +1,6 @@
 # Local services for development. `npm run services` starts them in the background.
 #
-# Host ports 5433 and 6380, so they don't clash with another Postgres on 5432 or Redis on 6379.
+# Host port 5433, so it doesn't clash with another Postgres on 5432.
 
 services:
   # The app's database. Data lives in the gained-db volume, so it survives restarts.
@@ -20,16 +20,6 @@ services:
       interval: 2s
       timeout: 3s
       retries: 30
-    restart: unless-stopped
-
-  # Valkey is the Redis-compatible store Render Key Value runs. Session audio is held here for
-  # at most an hour, until it's transcribed, then deleted (lib/media.ts). Nothing is persisted.
-  redis:
-    image: valkey/valkey:8-alpine
-    container_name: gained-redis
-    ports:
-      - "6380:6379"
-    command: ["valkey-server", "--save", "", "--appendonly", "no"]
     restart: unless-stopped
 
 volumes:

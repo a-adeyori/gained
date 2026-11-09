@@ -2,8 +2,8 @@
 // is safe to retry: each checks what is already done before doing it. Server-only.
 //
 //   booking authorized   -> writeBaseline
-//   tutor taps End       -> processSession = transcribeAudio (a no-op: sessions are no longer
-//                           recorded), then extractTopics from the tutor's summary
+//   tutor taps End       -> processSession = extractTopics from the tutor's summary (sessions
+//                           aren't recorded)
 //   tutor confirms topics -> prepareQuizzes (post-session quiz now, retention quiz held)
 //   both sides confirm   -> releasePayment (the 80% base)
 //   student submits quiz -> gradeQuiz
@@ -14,8 +14,6 @@ import { db } from './db';
 import { notifyQuiz, notifyTopicsReady } from './notify';
 import { captureBase, settle } from './escrow';
 import { gradeDeterministic, quizScore } from './grading';
-import { deleteMedia, listMedia } from './media';
-import { transcribe } from './transcribe';
 
 const message = (err: unknown) => (err instanceof Error ? err.message : String(err));
 
@@ -48,24 +46,6 @@ export async function writeBaselineStep(sessionId: string) {
 
 // --- After the session ----------------------------------------------------------------
 
-export async function transcribeAudioStep(sessionId: string) {
-  const session = await db.session.findUniqueOrThrow({ where: { id: sessionId } });
-  if (session.transcript !== null) return;
-  const recordings = await listMedia(sessionId, 'audio');
-  if (!recordings.length) return;
-  try {
-    const parts: string[] = [];
-    for (const r of recordings) parts.push(await transcribe(r.data, r.mime));
-    await db.session.update({ where: { id: sessionId }, data: { transcript: parts.join('\n\n') } });
-  } catch (err) {
-    // Topics then come from what was planned at booking; the tutor reviews them.
-    await recordError(sessionId, 'Transcription', err);
-  } finally {
-    // Audio is deleted right after transcription, whether or not it worked.
-    await deleteMedia(sessionId, 'audio');
-  }
-}
-
 /** The fallback when the AI can't produce a topic list: the tutor's own bullets or plan. */
 function topicsFromNotes(text: string): TopicList {
   const lines = text
@@ -83,17 +63,12 @@ function topicsFromNotes(text: string): TopicList {
 export async function extractTopicsStep(sessionId: string) {
   const session = await db.session.findUniqueOrThrow({ where: { id: sessionId } });
   if (session.topics_json) return;
-  const photos = await listMedia(sessionId, 'photo');
   try {
     const topics = await extractTopics({
       subject: session.subject,
       plannedTopics: session.planned_topics,
       transcript: session.transcript,
       notes: session.notes,
-      photos: photos.map((p) => ({
-        mediaType: (['image/png', 'image/webp'].includes(p.mime) ? p.mime : 'image/jpeg') as 'image/jpeg' | 'image/png' | 'image/webp',
-        base64: p.data.toString('base64'),
-      })),
     });
     await db.session.update({ where: { id: sessionId }, data: { topics_json: topics } });
   } catch (err) {
@@ -103,8 +78,6 @@ export async function extractTopicsStep(sessionId: string) {
       where: { id: sessionId },
       data: { topics_json: topicsFromNotes(session.notes || session.planned_topics) },
     });
-  } finally {
-    await deleteMedia(sessionId, 'photo');
   }
   await notifyTopicsReady(sessionId);
 }
@@ -221,6 +194,5 @@ export async function gradeQuizStep(quizId: string) {
 // --- Orchestration ------------------------------------------------------------------------
 
 export async function processSessionStep(sessionId: string) {
-  await transcribeAudioStep(sessionId);
   await extractTopicsStep(sessionId);
 }
