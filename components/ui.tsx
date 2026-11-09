@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import type { ComponentProps, ReactNode } from 'react';
-import { ESCROW_STATES, formatUsd, type EscrowStateKey } from '@/lib/escrow-states';
+import { ESCROW_STATES, FINALISING, formatUsd, type EscrowStateKey } from '@/lib/escrow-states';
+import { meetingService } from '@/lib/meeting';
 
 const cx = (...parts: (string | false | null | undefined)[]) => parts.filter(Boolean).join(' ');
 
@@ -30,6 +31,16 @@ export function ButtonLink({ variant = 'primary', className, ...props }: Compone
   return <Link className={buttonClass(variant, className)} {...props} />;
 }
 
+/** Opens the tutor's Zoom or Google Meet link in a new tab, where sessions happen. */
+export function JoinMeeting({ link, variant = 'primary', className }: { link: string | null; variant?: ButtonVariant; className?: string }) {
+  if (!link) return <p className={cx('text-sm text-muted', className)}>The tutor hasn’t added their meeting link yet.</p>;
+  return (
+    <a href={link} target="_blank" rel="noopener noreferrer" className={buttonClass(variant, className)}>
+      Join on {meetingService(link) ?? 'video'} <span aria-hidden>↗</span>
+    </a>
+  );
+}
+
 export function Card({ className, ...props }: ComponentProps<'div'>) {
   return <div className={cx('rounded-2xl border border-line bg-card p-5 sm:p-6', className)} {...props} />;
 }
@@ -38,8 +49,9 @@ export function Money({ cents, className }: { cents: number; className?: string 
   return <span className={cx('num', className)}>{formatUsd(cents)}</span>;
 }
 
-export function EscrowBadge({ state }: { state: EscrowStateKey }) {
-  const s = ESCROW_STATES[state];
+/** `checkInDone`: show "Finalising" instead of "Awaiting retention quiz" (see FINALISING). */
+export function EscrowBadge({ state, checkInDone = false }: { state: EscrowStateKey; checkInDone?: boolean }) {
+  const s = state === 'awaiting_retention' && checkInDone ? { ...ESCROW_STATES[state], ...FINALISING } : ESCROW_STATES[state];
   return (
     <span
       title={s.explain}

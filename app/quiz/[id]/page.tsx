@@ -39,6 +39,7 @@ export default async function QuizPage({ params, searchParams }: PageProps<'/qui
             return (
               <QuizRunner
                 quizId={quiz.id}
+                sessionId={quiz.session_id}
                 token={token}
                 kind={quiz.kind}
                 title={KIND_TITLE[quiz.kind]}

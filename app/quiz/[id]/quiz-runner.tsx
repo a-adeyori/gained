@@ -5,7 +5,7 @@
 
 import { useEffect, useRef, useState, useTransition } from 'react';
 import { MathText } from '@/components/math-text';
-import { Button, Card, inputClass } from '@/components/ui';
+import { Button, ButtonLink, Card, inputClass } from '@/components/ui';
 import type { PublicQuestion } from '@/lib/quiz-access';
 import { answerQuestion, finishQuiz, type Feedback } from './actions';
 
@@ -14,6 +14,7 @@ const CHEERS = ['Nice!', 'Got it!', 'Exactly.', 'That’s it.', 'Spot on.'];
 
 type Props = {
   quizId: string;
+  sessionId: string;
   token: string | undefined;
   kind: 'baseline' | 'post' | 'retention';
   title: string;
@@ -37,6 +38,8 @@ export function QuizRunner(props: Props) {
   const [deadline, setDeadline] = useState<number | null>(() => (props.answered ? Date.now() + TIME_LIMIT_MS : null));
   const [remaining, setRemaining] = useState(TIME_LIMIT_MS);
   const finishedRef = useRef(false);
+  const writtenRef = useRef<HTMLTextAreaElement>(null);
+  const keys = keysFor(props.subject);
 
   const question = questions[index];
   const progress = ((index + (feedback ? 1 : 0)) / questions.length) * 100;
@@ -135,6 +138,14 @@ export function QuizRunner(props: Props) {
               ? `${correctCount} right on the spot. Your full result is on the session page in a minute.`
               : 'Thanks for finishing. Your result is on the session page in a minute.'}
         </p>
+        {/* A link, not an automatic redirect, so nobody is moved on mid-read. A signed-out
+            student (the quiz needs no sign-in) is sent to sign in, then lands on Home. */}
+        <ButtonLink
+          href={props.kind === 'baseline' ? '/home' : `/sessions/${props.sessionId}`}
+          className="mt-8 w-full min-h-14 text-lg"
+        >
+          {props.kind === 'baseline' ? 'Back to home' : 'See your result'}
+        </ButtonLink>
       </div>
     );
   }
@@ -222,16 +233,20 @@ export function QuizRunner(props: Props) {
                 {question.unit && <span className="text-lg text-muted">{question.unit}</span>}
               </div>
             ) : (
-              <textarea
-                autoFocus
-                value={answer}
-                onChange={(e) => setAnswer(e.target.value)}
-                disabled={pending || !!feedback}
-                rows={5}
-                placeholder="Show your reasoning"
-                aria-label="Your answer"
-                className={`${inputClass} py-3`}
-              />
+              <div className="space-y-2">
+                <SymbolBar keys={keys} target={writtenRef} onInsert={setAnswer} disabled={pending || !!feedback} />
+                <textarea
+                  ref={writtenRef}
+                  autoFocus
+                  value={answer}
+                  onChange={(e) => setAnswer(e.target.value)}
+                  disabled={pending || !!feedback}
+                  rows={5}
+                  placeholder="Show your reasoning"
+                  aria-label="Your answer"
+                  className={`${inputClass} py-3`}
+                />
+              </div>
             )}
             {!feedback && (
               <Button type="submit" disabled={pending || !answer.trim()} className="w-full min-h-14 text-lg">
@@ -274,6 +289,107 @@ export function QuizRunner(props: Props) {
           </Button>
         </div>
       )}
+    </div>
+  );
+}
+
+// Symbols a keyboard doesn't have, for written answers, chosen by the session's subject (tutors
+// type subjects freely, so they're matched by keyword). The grader reads these and plain-text
+// forms (x^2, sqrt(49), +/-) alike, so the buttons are a convenience, not a requirement.
+type Key = { symbol: string; label?: string };
+
+const MATH: Key[] = [
+  { symbol: '²', label: 'squared' },
+  { symbol: '³', label: 'cubed' },
+  { symbol: '√', label: 'square root' },
+  { symbol: '±', label: 'plus or minus' },
+  { symbol: 'π', label: 'pi' },
+  { symbol: '×', label: 'times' },
+  { symbol: '÷', label: 'divided by' },
+  { symbol: '≤', label: 'less than or equal to' },
+  { symbol: '≥', label: 'greater than or equal to' },
+  { symbol: '≠', label: 'not equal to' },
+  { symbol: '°', label: 'degrees' },
+];
+const TRIG: Key[] = [
+  { symbol: 'sin' },
+  { symbol: 'cos' },
+  { symbol: 'tan' },
+  { symbol: 'θ', label: 'theta' },
+  { symbol: '⁴', label: 'to the fourth' },
+  { symbol: 'ⁿ', label: 'to the n' },
+  { symbol: '∛', label: 'cube root' },
+];
+const CHEMISTRY: Key[] = [
+  { symbol: '→', label: 'reaction arrow' },
+  { symbol: '⇌', label: 'equilibrium arrow' },
+  { symbol: '₂', label: 'subscript 2' },
+  { symbol: '₃', label: 'subscript 3' },
+  { symbol: '₄', label: 'subscript 4' },
+  { symbol: 'Δ', label: 'delta' },
+  { symbol: '°', label: 'degrees' },
+  { symbol: '×', label: 'times' },
+];
+const letters = (s: string): Key[] => [...s].map((symbol) => ({ symbol }));
+
+const KEY_SETS: [RegExp, Key[]][] = [
+  [/chem/, CHEMISTRY],
+  [/trig|calc|physics|geometry|math|sat\b|act\b|engineering/, [...MATH, ...TRIG]],
+  [/algebra|statistic|econ/, MATH],
+  [/spanish|español/, letters('áéíóúñü¿¡')],
+  [/french|français/, letters('àâçéèêëîïôùûœ')],
+  [/german|deutsch/, letters('äöüß')],
+  [/italian|portuguese/, letters('àèéìòùãõâêôç')],
+];
+
+/** The buttons for a subject, or none for subjects that don't need them (history, essays). */
+function keysFor(subject: string): Key[] {
+  const s = subject.toLowerCase();
+  return KEY_SETS.find(([match]) => match.test(s))?.[1] ?? [];
+}
+
+/** Inserts a symbol at the cursor in `target`, then puts the cursor just after it. */
+function SymbolBar({
+  keys,
+  target,
+  onInsert,
+  disabled,
+}: {
+  keys: Key[];
+  target: React.RefObject<HTMLTextAreaElement | null>;
+  onInsert: (value: string) => void;
+  disabled: boolean;
+}) {
+  const insert = (symbol: string) => {
+    const el = target.current;
+    if (!el) return;
+    const start = el.selectionStart ?? el.value.length;
+    const end = el.selectionEnd ?? start;
+    onInsert(el.value.slice(0, start) + symbol + el.value.slice(end));
+    // After React re-renders the new value, restore focus and place the cursor after the symbol.
+    requestAnimationFrame(() => {
+      el.focus();
+      el.setSelectionRange(start + symbol.length, start + symbol.length);
+    });
+  };
+  if (!keys.length) return null;
+  return (
+    <div role="toolbar" aria-label="Symbols" className="flex flex-wrap gap-1.5">
+      {keys.map(({ symbol, label }) => (
+        <button
+          key={symbol}
+          type="button"
+          disabled={disabled}
+          aria-label={`Insert ${label ?? symbol}`}
+          title={label ?? symbol}
+          // Keep the textarea focused (and the phone keyboard open) while tapping a symbol.
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => insert(symbol)}
+          className="grid min-h-10 min-w-10 place-items-center rounded-lg border border-line bg-card px-2 text-lg hover:bg-surface-2 disabled:opacity-40"
+        >
+          {symbol}
+        </button>
+      ))}
     </div>
   );
 }

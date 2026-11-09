@@ -6,7 +6,7 @@
 
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Button, ButtonLink, Card, Field, inputClass, PageTitle } from '@/components/ui';
+import { Button, ButtonLink, Card, Field, inputClass, JoinMeeting, PageTitle } from '@/components/ui';
 import type { TopicList } from '@/lib/claude';
 
 type Stage = 'before' | 'live' | 'ending' | 'processing' | 'topics' | 'done';
@@ -19,7 +19,7 @@ type Props = {
   studentName: string;
   subject: string;
   plannedTopics: string;
-  meetingPlace: string | null;
+  meetingLink: string | null;
   startAt: string;
   initialStage: 'before' | 'processing';
   initialTopics: TopicList | null;
@@ -129,8 +129,7 @@ export function LiveSession(props: Props) {
             Planned: {props.plannedTopics}
             <br />
             <span className="text-sm text-muted">
-              Starts {new Date(props.startAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
-              {props.meetingPlace && <> · {props.meetingPlace}</>}
+              Starts {new Date(props.startAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })} · Online
             </span>
           </>
         )}
@@ -148,6 +147,7 @@ export function LiveSession(props: Props) {
             When you end the session, you’ll write what you taught {props.studentName}: the subtopics, or a short summary. The quiz
             after the session is written from it. Sessions aren’t recorded.
           </p>
+          <JoinMeeting link={props.meetingLink} variant="secondary" className="w-full" />
           <Button onClick={begin} className="w-full">
             Start session
           </Button>
@@ -163,6 +163,7 @@ export function LiveSession(props: Props) {
             </div>
             <span className="num text-2xl font-semibold tracking-tight">{clock(startedAt === null ? 0 : now - startedAt)}</span>
           </Card>
+          <JoinMeeting link={props.meetingLink} variant="secondary" className="w-full" />
 
           <Card>
             <Field

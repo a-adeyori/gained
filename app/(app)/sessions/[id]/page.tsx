@@ -8,12 +8,12 @@ import { JourneyBar, NextStepCard } from '@/components/journey';
 import { MathText } from '@/components/math-text';
 import { MoneySplit } from '@/components/money-split';
 import { ScoreBar } from '@/components/score-bar';
-import { Button, ButtonLink, Card, EscrowBadge, HeldNotCharged, Money } from '@/components/ui';
+import { Button, ButtonLink, Card, EscrowBadge, HeldNotCharged, JoinMeeting, Money } from '@/components/ui';
 import { canViewSession, requireUser } from '@/lib/auth';
 import type { Question } from '@/lib/claude';
 import { db } from '@/lib/db';
 import { tutorAverageGain } from '@/lib/escrow';
-import { ESCROW_STATES, type EscrowStateKey } from '@/lib/escrow-states';
+import { checkInDone, ESCROW_STATES, type EscrowStateKey } from '@/lib/escrow-states';
 import { baseCentsFor, computeSplit } from '@/lib/payout';
 import { nextStep, stageOf, stageStatuses } from '@/lib/journey';
 import { appealWindowClosesAt } from '@/lib/retention';
@@ -54,12 +54,21 @@ export default async function SessionPage({ params }: PageProps<'/sessions/[id]'
   const isTutor = user.id === session.tutor_id;
   const isFamily = [session.payer_id, session.student_id].includes(user.id);
   const now = new Date();
+  // After the check-in, the escrow still says "awaiting retention" until settlement; say what's really next.
+  const finalising = state === 'awaiting_retention' && checkInDone(quiz('retention'), now) && session.ended_at !== null;
+  const stateExplain = finalising
+    ? `The 48-hour check-in is done. The final payment goes through once the appeal window closes on ${dateTime(appealWindowClosesAt(session.ended_at!))}.`
+    : ESCROW_STATES[state].explain;
 
-  // The split: final once settled; otherwise an estimate from the scores so far.
+  // The split: final once settled; decided if an appeal set the tutor's pay (settlement pays
+  // exactly that, lib/escrow.ts); otherwise an estimate from the scores so far.
   const base = baseCentsFor(session.price_cents);
+  const overrideCents = result?.override_tutor_pay_cents ?? null;
   let split: { bonus: number; returned: number; provisional: boolean } | null = null;
   if ((state === 'settled' || state === 'returned') && result?.tutor_pay_cents != null) {
     split = { bonus: result.tutor_pay_cents - base, returned: escrow.returned_cents ?? session.price_cents - result.tutor_pay_cents, provisional: false };
+  } else if (overrideCents !== null) {
+    split = { bonus: overrideCents - base, returned: session.price_cents - overrideCents, provisional: false };
   } else if (result?.pre_score != null && result.post_score != null) {
     const estimate = computeSplit({
       priceCents: session.price_cents,
@@ -92,16 +101,17 @@ export default async function SessionPage({ params }: PageProps<'/sessions/[id]'
     <div className="mx-auto max-w-3xl">
       <header className="mb-8">
         <p className="text-sm font-medium text-muted">
-          {dateTime(session.start_at)}
-          {session.meeting_place && <> · {session.meeting_place}</>}
+          {dateTime(session.start_at)} · Online
         </p>
         <h1 className="mt-1 font-display text-4xl leading-tight tracking-tight sm:text-5xl">
           {session.subject} with {isTutor ? session.student.name : session.tutor.name}
         </h1>
         <div className="mt-3 flex flex-wrap items-center gap-3">
-          <EscrowBadge state={state} />
-          <span className="text-sm text-ink-soft">{ESCROW_STATES[state].explain}</span>
+          <EscrowBadge state={state} checkInDone={finalising} />
+          <span className="text-sm text-ink-soft">{stateExplain}</span>
         </div>
+        {/* Until the session ends, the tutor's meeting link is how everyone gets there. */}
+        {!session.ended_at && session.status !== 'cancelled' && <JoinMeeting link={session.tutor.meeting_link} className="mt-5" />}
         <div className="mt-8">
           <JourneyBar stages={stageStatuses(session)} />
         </div>
@@ -233,7 +243,19 @@ export default async function SessionPage({ params }: PageProps<'/sessions/[id]'
           .map((a) => (
             <Card key={a.id}>
               <p className="font-medium">Appeal {a.status === 'upheld' ? 'reviewed: grade stands' : 'reviewed: payment adjusted'}</p>
-              {a.resolution && <p className="mt-1 text-sm text-ink-soft">{a.resolution}</p>}
+              {a.status === 'adjusted' && overrideCents !== null && (
+                <p className="mt-1 text-sm">
+                  The tutor’s pay for this session is now <Money cents={overrideCents} className="font-semibold" /> of the{' '}
+                  <Money cents={session.price_cents} /> price
+                  {overrideCents < session.price_cents ? (
+                    <>
+                      ; <Money cents={session.price_cents - overrideCents} className="font-semibold" /> comes back to the family
+                    </>
+                  ) : null}
+                  . {state === 'settled' || state === 'returned' ? 'Paid out at settlement.' : 'It goes through at settlement, after the appeal window.'}
+                </p>
+              )}
+              {a.resolution && <p className="mt-1 text-sm text-ink-soft">“{a.resolution}”</p>}
             </Card>
           ))}
 

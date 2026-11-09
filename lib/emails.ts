@@ -27,12 +27,12 @@ export function bookedEmail(p: {
   tutorName: string;
   startAt: Date;
   priceCents: number;
-  /** Where they meet in person; null on sessions booked before sessions had a place. */
-  meetingPlace: string | null;
+  /** The tutor's Zoom or Google Meet link the session happens on. */
+  meetingLink: string | null;
   link: string;
 }): Mail {
   const at = when(p.startAt);
-  const where = p.meetingPlace ? `\n\nWhere: ${p.meetingPlace}` : '';
+  const where = p.meetingLink ? `\n\nJoin online: ${p.meetingLink}` : '';
   if (p.to === 'tutor') {
     return {
       subject: `New booking: ${p.subject} with ${p.studentName}`,

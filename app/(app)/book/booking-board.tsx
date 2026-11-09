@@ -113,9 +113,7 @@ export default function BookingBoard({ tutors, ranges, sessions, me, family }: B
                       /hr
                     </p>
                   </div>
-                  <p className="mt-1 text-sm text-muted">
-                    {t.serviceArea ? `Meets students in ${t.serviceArea}` : 'Area not listed yet'}
-                  </p>
+                  <p className="mt-1 text-sm text-muted">Online{t.meeting ? ` on ${t.meeting}` : ''}</p>
                   {mine.length ? (
                     <div className="mt-3 flex flex-wrap gap-2">
                       {mine.map((r) => {
@@ -239,7 +237,7 @@ function BookingSheet({
             <h2 id={titleId} className="font-display text-3xl leading-tight">
               {tutor.name}
             </h2>
-            {tutor.serviceArea && <p className="mt-1 text-sm text-muted">In person · {tutor.serviceArea}</p>}
+            <p className="mt-1 text-sm text-muted">Online{tutor.meeting ? ` · ${tutor.meeting}` : ''}</p>
           </div>
           <button type="button" onClick={onClose} className="min-h-11 rounded-full px-3 text-sm text-muted hover:bg-surface-2 hover:text-ink">
             Close
@@ -360,22 +358,9 @@ function BookingSheet({
                 />
               </Field>
 
-              <Field
-                label="Where will you meet?"
-                hint={`Sessions are in person. An address or a public place${tutor.serviceArea ? ` in or near ${tutor.serviceArea}` : ''}; only your family and the tutor see it.`}
-              >
-                <input
-                  name="meetingPlace"
-                  required
-                  minLength={3}
-                  maxLength={200}
-                  placeholder="e.g. Brooklyn Public Library, Central branch"
-                  className={inputClass}
-                />
-              </Field>
-
               <p className="rounded-xl bg-surface-2 p-3.5 text-xs leading-relaxed text-ink-soft">
-                Sessions aren’t recorded. After the session, the tutor writes what they taught, and the quiz that measures progress is
+                The session is online on {tutor.name.split(' ')[0]}’s {tutor.meeting ?? 'video'} link, sent in your booking email and shown on
+                the session page. Sessions aren’t recorded. After the session, the tutor writes what they taught, and the quiz that measures progress is
                 written from it.
               </p>
 

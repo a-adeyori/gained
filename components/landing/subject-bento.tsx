@@ -35,7 +35,7 @@ export function SubjectBento() {
         <h2 id="subjects-title" className="font-display text-6xl leading-[0.9] tracking-tight sm:text-8xl">
           Any subject.
           <br />
-          <span className="italic text-muted">In person.</span>
+          <span className="italic text-muted">Online.</span>
         </h2>
 
         <div className={s.grid}>
