@@ -1,5 +1,6 @@
-// The tutor ends the session: this counts as the tutor's side of "marked complete", and starts
-// the pipeline (transcribe, then extract topics).
+// The tutor ends the session with a summary of what they taught: this counts as the tutor's
+// side of "marked complete", and starts the pipeline, which turns the summary into topics.
+// Sessions aren't recorded, so the summary is what the post-session quiz is written from.
 
 import { z } from 'zod';
 import { db } from '@/lib/db';
@@ -15,9 +16,9 @@ export const POST = handle(async (req: Request, ctx: RouteContext<'/api/sessions
   if (!['booked', 'live'].includes(session.status)) return json({ status: session.status });
 
   const body = Body.safeParse(await req.json().catch(() => ({})));
-  if (!body.success) throw new HttpError(400, 'Notes are too long.');
+  if (!body.success) throw new HttpError(400, 'Keep the summary under 2,000 characters.');
   const notes = body.data.notes?.trim() || null;
-  if (!session.consent_recording && !notes) throw new HttpError(400, 'Add 3–5 bullet points on what you covered.');
+  if (!notes) throw new HttpError(400, 'Write what you taught (the subtopics or a short summary). The quiz is written from it.');
 
   const now = new Date();
   await db.session.update({

@@ -2,7 +2,8 @@
 // is safe to retry: each checks what is already done before doing it. Server-only.
 //
 //   booking authorized   -> writeBaseline
-//   tutor taps End       -> processSession = transcribeAudio, then extractTopics
+//   tutor taps End       -> processSession = transcribeAudio (a no-op: sessions are no longer
+//                           recorded), then extractTopics from the tutor's summary
 //   tutor confirms topics -> prepareQuizzes (post-session quiz now, retention quiz held)
 //   both sides confirm   -> releasePayment (the 80% base)
 //   student submits quiz -> gradeQuiz

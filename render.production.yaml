@@ -48,6 +48,11 @@ services:
         sync: false
       - key: ANTHROPIC_API_KEY
         sync: false
+      # Quizzes, topics and grading run through Elastic (lib/elastic.ts).
+      - key: ELASTIC_URL
+        sync: false
+      - key: ELASTIC_API_KEY
+        sync: false
       - key: AG_STUDIO
         sync: false
       # Bryntum licence key for the booking and availability calendars (components/scheduler/license.ts).
@@ -87,6 +92,11 @@ services:
       - key: PAYPAL_SECRET
         sync: false
       - key: ANTHROPIC_API_KEY
+        sync: false
+      # Quizzes, topics and grading run through Elastic (lib/elastic.ts).
+      - key: ELASTIC_URL
+        sync: false
+      - key: ELASTIC_API_KEY
         sync: false
       - key: OPENAI_API_KEY
         sync: false

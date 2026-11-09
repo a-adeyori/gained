@@ -70,8 +70,6 @@ const Booking = z.object({
     .trim()
     .min(3, 'Say where you’ll meet, e.g. an address or a library.')
     .max(MAX_MEETING_PLACE_LENGTH, `Keep the meeting place under ${MAX_MEETING_PLACE_LENGTH} characters.`),
-  // Recording is how the quiz is written, so it's required. Audio is deleted once transcribed.
-  consent: z.literal('on', { error: 'Agree to the recording to book. The audio is deleted as soon as it’s transcribed.' }),
 });
 
 export async function bookSession(_prev: BookState, form: FormData): Promise<BookState> {
@@ -113,7 +111,6 @@ export async function bookSession(_prev: BookState, form: FormData): Promise<Boo
             subject: input.subject,
             planned_topics: check.plannedTopics,
             meeting_place: input.meetingPlace,
-            consent_recording: true,
             status: 'booked',
           },
         });
