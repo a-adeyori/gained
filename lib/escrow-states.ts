@@ -39,6 +39,20 @@ export const ESCROW_STATES: Record<
   },
 };
 
+/**
+ * "Awaiting retention quiz" stays the escrow state until settlement, which also waits for the
+ * 72-hour appeal window. Once the check-in is done (taken, or closed unanswered), screens show
+ * this instead, so families aren't told to wait for a quiz that's already over.
+ */
+export const FINALISING = {
+  label: 'Finalising',
+  explain: 'The 48-hour check-in is done. The bonus, and anything coming back to you, is settled once the appeal window closes.',
+};
+
+/** Whether a session's 48-hour check-in is over: taken, or closed without an answer. */
+export const checkInDone = (retention: { completed_at: Date | null; closes_at: Date | null } | undefined, now = new Date()) =>
+  !!retention && (retention.completed_at !== null || (retention.closes_at !== null && retention.closes_at <= now));
+
 /** Bryntum and AG Studio need plain colours, not CSS variables (light-mode values). */
 export const ESCROW_STATE_HEX: Record<EscrowStateKey, string> = {
   held: '#8a877f',

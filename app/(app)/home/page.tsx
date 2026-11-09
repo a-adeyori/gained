@@ -10,7 +10,7 @@ import { EscrowBadge, Money } from '@/components/ui';
 import { requireUser, type CurrentUser } from '@/lib/auth';
 import { normalizeSubjects } from '@/lib/booking';
 import { db } from '@/lib/db';
-import type { EscrowStateKey } from '@/lib/escrow-states';
+import { checkInDone, type EscrowStateKey } from '@/lib/escrow-states';
 import { nextStep, stageOf, stageStatuses, type NextStep } from '@/lib/journey';
 import { quizToken } from '@/lib/signing';
 import { DailyCard } from './daily-card';
@@ -214,7 +214,7 @@ function SessionList({ title, sessions, viewer, steps }: { title: string; sessio
                     </span>
                   )}
                   <Money cents={s.price_cents} className="text-sm text-ink-soft" />
-                  {s.escrow && <EscrowBadge state={s.escrow.state as EscrowStateKey} />}
+                  {s.escrow && <EscrowBadge state={s.escrow.state as EscrowStateKey} checkInDone={checkInDone(s.quizzes.find((q) => q.kind === 'retention'))} />}
                 </div>
               </Link>
             </li>
