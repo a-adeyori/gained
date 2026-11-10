@@ -1,15 +1,14 @@
 'use client';
 
-// One question per screen, a progress bar, and quick friendly feedback. Quizzes never run past
-// 5 minutes: when time is up, whatever is answered is submitted.
+// One question per screen, a progress bar, and quick friendly feedback. There's no time limit:
+// students take as long as they need (the quiz only closes when its window does).
 
-import { useEffect, useRef, useState, useTransition } from 'react';
+import { useRef, useState, useTransition } from 'react';
 import { MathText } from '@/components/math-text';
 import { Button, ButtonLink, Card, inputClass } from '@/components/ui';
 import type { PublicQuestion } from '@/lib/quiz-access';
 import { answerQuestion, finishQuiz, type Feedback } from './actions';
 
-const TIME_LIMIT_MS = 5 * 60_000;
 const CHEERS = ['Nice!', 'Got it!', 'Exactly.', 'That’s it.', 'Spot on.'];
 
 type Props = {
@@ -34,9 +33,6 @@ export function QuizRunner(props: Props) {
   const [correctCount, setCorrectCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
-  // A resumed quiz skips the intro, so its clock starts on load.
-  const [deadline, setDeadline] = useState<number | null>(() => (props.answered ? Date.now() + TIME_LIMIT_MS : null));
-  const [remaining, setRemaining] = useState(TIME_LIMIT_MS);
   const finishedRef = useRef(false);
   const writtenRef = useRef<HTMLTextAreaElement>(null);
   const keys = keysFor(props.subject);
@@ -57,26 +53,7 @@ export function QuizRunner(props: Props) {
     });
   };
 
-  // The 5-minute clock starts at the first question and also runs across a resumed quiz.
-  useEffect(() => {
-    if (stage !== 'question' || deadline === null) return;
-    const timer = setInterval(() => {
-      const left = deadline - Date.now();
-      setRemaining(Math.max(0, left));
-      if (left <= 0) {
-        clearInterval(timer);
-        finish();
-      }
-    }, 500);
-    return () => clearInterval(timer);
-    // finish is stable enough for this purpose; re-running on every render would reset the clock.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stage, deadline]);
-
-  const begin = () => {
-    setDeadline(Date.now() + TIME_LIMIT_MS);
-    setStage('question');
-  };
+  const begin = () => setStage('question');
 
   const submit = (value: string) => {
     if (!value.trim()) return;
@@ -113,8 +90,8 @@ export function QuizRunner(props: Props) {
             <p className="text-sm text-muted">questions</p>
           </div>
           <div>
-            <p className="num text-3xl font-semibold">&lt; 5</p>
-            <p className="text-sm text-muted">minutes</p>
+            <p className="text-3xl font-semibold">No</p>
+            <p className="text-sm text-muted">time limit</p>
           </div>
         </Card>
         <Button onClick={begin} className="mt-8 w-full min-h-14 text-lg">
@@ -150,25 +127,17 @@ export function QuizRunner(props: Props) {
     );
   }
 
-  const minutes = Math.floor(remaining / 60_000);
-  const seconds = String(Math.floor((remaining % 60_000) / 1000)).padStart(2, '0');
-
   return (
     <div className="pt-4">
-      <div className="flex items-center gap-3">
-        <div
-          className="h-3 flex-1 overflow-hidden rounded-full bg-surface-2"
-          role="progressbar"
-          aria-valuemin={0}
-          aria-valuemax={questions.length}
-          aria-valuenow={index + (feedback ? 1 : 0)}
-          aria-label="Quiz progress"
-        >
-          <div className="h-full rounded-full bg-gain transition-[width] duration-500" style={{ width: `${progress}%` }} />
-        </div>
-        <span className={`num text-sm ${remaining < 60_000 ? 'text-state-awaiting' : 'text-muted'}`}>
-          {deadline ? `${minutes}:${seconds}` : ''}
-        </span>
+      <div
+        className="h-3 overflow-hidden rounded-full bg-surface-2"
+        role="progressbar"
+        aria-valuemin={0}
+        aria-valuemax={questions.length}
+        aria-valuenow={index + (feedback ? 1 : 0)}
+        aria-label="Quiz progress"
+      >
+        <div className="h-full rounded-full bg-gain transition-[width] duration-500" style={{ width: `${progress}%` }} />
       </div>
       <p className="mt-6 text-sm font-medium text-muted">
         Question {index + 1} of {questions.length}

@@ -99,7 +99,7 @@ export function nextStep(s: JourneySession, viewerId: string, now = new Date()):
   if (!s.ended_at) {
     const baseline = quiz('baseline');
     if (isStudent && isOpen(baseline, now)) {
-      return { kind: 'action', title: 'Take your warm-up quiz', detail: '5 quick questions so your progress can be measured. Under 5 minutes.', cta: 'Start warm-up', href: page, quizId: baseline!.id };
+      return { kind: 'action', title: 'Take your warm-up quiz', detail: '5 quick questions so your progress can be measured. No time limit.', cta: 'Start warm-up', href: page, quizId: baseline!.id };
     }
     if (isTutor) {
       const soon = s.start_at.getTime() - now.getTime() < 15 * 60_000;
@@ -128,7 +128,7 @@ export function nextStep(s: JourneySession, viewerId: string, now = new Date()):
   // 4. The post-session quiz.
   const post = quiz('post');
   if (!post?.completed_at) {
-    if (isStudent && isOpen(post, now)) return { kind: 'action', title: 'Take your quiz', detail: 'Fresh questions on what you just covered. Under 5 minutes.', cta: 'Start quiz', href: page, quizId: post!.id };
+    if (isStudent && isOpen(post, now)) return { kind: 'action', title: 'Take your quiz', detail: 'Fresh questions on what you just covered. No time limit.', cta: 'Start quiz', href: page, quizId: post!.id };
     if (!post) return { kind: 'wait', title: 'Writing the quiz', detail: 'Built from the confirmed topics. Ready in a few minutes.' };
     return { kind: 'wait', title: `Waiting for ${student} to take the quiz`, detail: 'The result decides the learning bonus.' };
   }

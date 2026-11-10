@@ -296,7 +296,7 @@ function StatusCard(props: {
           <p className="text-sm text-ink-soft">
             {props.baselineDone
               ? 'The student’s starting point is recorded. Next: the session itself.'
-              : 'It measures where the student starts, so the quiz afterwards can show real progress. Under 5 minutes.'}
+              : 'It measures where the student starts, so the quiz afterwards can show real progress. No time limit.'}
           </p>
           {props.baselineLink && <QuizLink path={props.baselineLink} label="Take the warm-up" own={props.isStudent} />}
         </>
