@@ -5,6 +5,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { ButtonLink, Card, EscrowBadge, Money, PageTitle } from '@/components/ui';
+import { LocalTime } from '@/components/local-time';
 import { requireUser } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { ESCROW_STATES, type EscrowStateKey } from '@/lib/escrow-states';
@@ -13,7 +14,6 @@ import { GainChart, type GainSeries } from './gain-chart';
 
 export const metadata: Metadata = { title: 'Progress' };
 
-const when = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
 export default async function ProgressPage() {
   const user = await requireUser('parent');
@@ -125,7 +125,7 @@ export default async function ProgressPage() {
                       {byChild && <span className="text-ink-soft"> · {s.student.name.split(' ')[0]}</span>}
                     </p>
                     <p className="text-sm text-muted">
-                      {when(s.start_at)} · with {s.tutor.name}
+                      <LocalTime iso={s.start_at.toISOString()} format="date" /> · with {s.tutor.name}
                     </p>
                   </div>
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1">

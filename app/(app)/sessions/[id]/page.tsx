@@ -5,6 +5,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { JourneyBar, NextStepCard } from '@/components/journey';
+import { LocalTime } from '@/components/local-time';
 import { MathText } from '@/components/math-text';
 import { MoneySplit } from '@/components/money-split';
 import { ScoreBar } from '@/components/score-bar';
@@ -21,9 +22,6 @@ import { quizToken } from '@/lib/signing';
 import { confirmSession } from './actions';
 
 export const metadata: Metadata = { title: 'Session' };
-
-const dateTime = (d: Date) =>
-  d.toLocaleString('en-US', { weekday: 'long', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit' });
 
 export default async function SessionPage({ params }: PageProps<'/sessions/[id]'>) {
   const { id } = await params;
@@ -56,9 +54,14 @@ export default async function SessionPage({ params }: PageProps<'/sessions/[id]'
   const now = new Date();
   // After the check-in, the escrow still says "awaiting retention" until settlement; say what's really next.
   const finalising = state === 'awaiting_retention' && checkInDone(quiz('retention'), now) && session.ended_at !== null;
-  const stateExplain = finalising
-    ? `The 48-hour check-in is done. The final payment goes through once the appeal window closes on ${dateTime(appealWindowClosesAt(session.ended_at!))}.`
-    : ESCROW_STATES[state].explain;
+  const stateExplain = finalising ? (
+    <>
+      The 48-hour check-in is done. The final payment goes through once the appeal window closes on{' '}
+      <LocalTime iso={appealWindowClosesAt(session.ended_at!).toISOString()} format="long" />.
+    </>
+  ) : (
+    ESCROW_STATES[state].explain
+  );
 
   // The split: final once settled; decided if an appeal set the tutor's pay (settlement pays
   // exactly that, lib/escrow.ts); otherwise an estimate from the scores so far.
@@ -101,7 +104,7 @@ export default async function SessionPage({ params }: PageProps<'/sessions/[id]'
     <div className="mx-auto max-w-3xl">
       <header className="mb-8">
         <p className="text-sm font-medium text-muted">
-          {dateTime(session.start_at)} · Online
+          <LocalTime iso={session.start_at.toISOString()} format="long" /> · Online
         </p>
         <h1 className="mt-1 font-display text-4xl leading-tight tracking-tight sm:text-5xl">
           {session.subject} with {isTutor ? session.student.name : session.tutor.name}
