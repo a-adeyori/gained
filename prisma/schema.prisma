@@ -41,6 +41,11 @@ model User {
   // password from an emailed link (lib/verification.ts).
   email_verified_at DateTime?
   paypal_email  String?
+  // IANA time zone (e.g. "America/Chicago") that emails show times in. The browser reports it
+  // on each signed-in visit unless the person chose one on the Account page (time_zone_manual).
+  // Null until then: emails use UTC, labelled. Pages ignore it and use the device's zone.
+  time_zone        String?
+  time_zone_manual Boolean  @default(false)
   is_minor      Boolean  @default(false)
   // Students a parent added; an adult student is their own payer and has no parent.
   parent_id     String?

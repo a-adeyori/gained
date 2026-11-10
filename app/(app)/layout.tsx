@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { signOut } from '@/app/(auth)/actions';
+import { TimeZoneSync } from '@/components/time-zone-sync';
 import { Logo } from '@/components/ui';
 import { requireUser } from '@/lib/auth';
 import { VerifyBanner } from './verify-banner';
@@ -41,18 +42,20 @@ export default async function AppLayout({ children }: LayoutProps<'/'>) {
               </Link>
             ))}
           </nav>
-          <span
-            className="rounded-full px-2.5 py-1 text-xs font-semibold capitalize text-[#121210]"
+          <Link
+            href="/account"
+            className="rounded-full px-2.5 py-1 text-xs font-semibold capitalize text-[#121210] hover:opacity-85"
             style={{ background: ROLE_COLOR[user.role] }}
-            title={`Signed in as ${user.name}`}
+            title={`Signed in as ${user.name}. Your account`}
           >
             {user.role}
-          </span>
+          </Link>
           <form action={signOut}>
             <button className="whitespace-nowrap rounded-full px-3 py-1.5 text-sm text-muted hover:bg-surface-2 hover:text-ink">Sign out</button>
           </form>
         </div>
       </header>
+      <TimeZoneSync saved={user.time_zone} manual={user.time_zone_manual} />
       {!user.email_verified_at && <VerifyBanner email={user.email} />}
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:py-12">{children}</main>
     </div>
