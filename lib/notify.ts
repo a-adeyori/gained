@@ -23,10 +23,10 @@ export const notifyBooked = (sessionId: string) =>
   safely('booked', async () => {
     const s = await db.session.findUniqueOrThrow({ where: { id: sessionId }, include: withPeople });
     const common = { subject: s.subject, studentName: s.student.name, tutorName: s.tutor.name, startAt: s.start_at, priceCents: s.price_cents, meetingLink: s.tutor.meeting_link };
-    await sendEmail({ to: s.payer.email, ...bookedEmail({ ...common, to: 'payer', link: appUrl(`/sessions/${s.id}`) }) });
-    await sendEmail({ to: s.tutor.email, ...bookedEmail({ ...common, to: 'tutor', link: appUrl('/home') }) });
+    await sendEmail({ to: s.payer.email, ...bookedEmail({ ...common, to: 'payer', timeZone: s.payer.time_zone, link: appUrl(`/sessions/${s.id}`) }) });
+    await sendEmail({ to: s.tutor.email, ...bookedEmail({ ...common, to: 'tutor', timeZone: s.tutor.time_zone, link: appUrl('/home') }) });
     if (s.student_id !== s.payer_id) {
-      await sendEmail({ to: s.student.email, ...bookedEmail({ ...common, to: 'student', link: appUrl('/home') }) });
+      await sendEmail({ to: s.student.email, ...bookedEmail({ ...common, to: 'student', timeZone: s.student.time_zone, link: appUrl('/home') }) });
     }
   });
 
@@ -37,11 +37,11 @@ export const notifyReminder = (sessionId: string) =>
     const baseline = s.quizzes.find((q) => q.kind === 'baseline');
     const warmUpLink = baseline?.sent_at && !baseline.completed_at ? appUrl(`/quiz/${baseline.id}?t=${quizToken(baseline.id)}`) : null;
     const common = { subject: s.subject, studentName: s.student.name, tutorName: s.tutor.name, startAt: s.start_at, meetingLink: s.tutor.meeting_link, warmUpLink };
-    await sendEmail({ to: s.tutor.email, ...reminderEmail({ ...common, to: 'tutor', link: appUrl(`/sessions/${s.id}/live`) }) });
-    await sendEmail({ to: s.student.email, ...reminderEmail({ ...common, to: 'student', link: appUrl('/home') }) });
+    await sendEmail({ to: s.tutor.email, ...reminderEmail({ ...common, to: 'tutor', timeZone: s.tutor.time_zone, link: appUrl(`/sessions/${s.id}/live`) }) });
+    await sendEmail({ to: s.student.email, ...reminderEmail({ ...common, to: 'student', timeZone: s.student.time_zone, link: appUrl('/home') }) });
     // A parent who booked for themselves is the student, and already has the student's email.
     if (s.student_id !== s.payer_id) {
-      await sendEmail({ to: s.payer.email, ...reminderEmail({ ...common, to: 'payer', link: appUrl(`/sessions/${s.id}`) }) });
+      await sendEmail({ to: s.payer.email, ...reminderEmail({ ...common, to: 'payer', timeZone: s.payer.time_zone, link: appUrl(`/sessions/${s.id}`) }) });
     }
   });
 
@@ -59,6 +59,7 @@ export const notifyQuiz = (quizId: string) =>
         tutorName: s.tutor.name,
         link: appUrl(`/quiz/${q.id}?t=${quizToken(q.id)}`),
         closesAt: q.closes_at,
+        timeZone: s.student.time_zone,
       }),
     });
   });

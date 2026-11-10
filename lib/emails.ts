@@ -16,8 +16,20 @@ export function first(name: string) {
   if (!word) return 'there';
   return TITLE.test(word) || /['’]s$/i.test(word) ? whole : word;
 }
-const when = (d: Date) =>
-  d.toLocaleString('en-US', { weekday: 'long', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' });
+/**
+ * A date in the recipient's saved time zone (users.time_zone), named so it's never ambiguous,
+ * e.g. "Monday, November 9 at 7:00 PM CST". Without one, UTC, so every server writes the same.
+ */
+const when = (d: Date, timeZone?: string | null) =>
+  d.toLocaleString('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    timeZoneName: 'short',
+    timeZone: timeZone ?? 'UTC',
+  });
 const sign = '\n\nGained';
 
 export function bookedEmail(p: {
@@ -30,8 +42,10 @@ export function bookedEmail(p: {
   /** The tutor's Zoom or Google Meet link the session happens on. */
   meetingLink: string | null;
   link: string;
+  /** The recipient's saved time zone. */
+  timeZone?: string | null;
 }): Mail {
-  const at = when(p.startAt);
+  const at = when(p.startAt, p.timeZone);
   const where = p.meetingLink ? `\n\nJoin online: ${p.meetingLink}` : '';
   if (p.to === 'tutor') {
     return {
@@ -64,8 +78,10 @@ export function reminderEmail(p: {
   meetingLink: string | null;
   link: string;
   warmUpLink: string | null;
+  /** The recipient's saved time zone. */
+  timeZone?: string | null;
 }): Mail {
-  const at = when(p.startAt);
+  const at = when(p.startAt, p.timeZone);
   const where = p.meetingLink ? `\n\nJoin online: ${p.meetingLink}` : '';
   if (p.to === 'tutor') {
     return {
@@ -98,9 +114,11 @@ export function quizEmail(p: {
   tutorName: string;
   link: string;
   closesAt: Date | null;
+  /** The student's saved time zone. */
+  timeZone?: string | null;
 }): Mail {
   const hi = `Hi ${first(p.studentName)},\n\n`;
-  const closes = p.closesAt ? `\n\nIt's open until ${when(p.closesAt)}.` : '';
+  const closes = p.closesAt ? `\n\nIt's open until ${when(p.closesAt, p.timeZone)}.` : '';
   if (p.kind === 'baseline') {
     return {
       subject: `Warm-up quiz for ${p.subject}`,
