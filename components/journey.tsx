@@ -3,8 +3,22 @@
 
 import Link from 'next/link';
 import type { CSSProperties } from 'react';
-import type { NextStep, Stage, StageStatus } from '@/lib/journey';
+import { AT, type NextStep, type Stage, type StageStatus } from '@/lib/journey';
+import { LocalTime } from './local-time';
 import { ButtonLink, cx } from './ui';
+
+/** Puts `at`, in the viewer's time zone, where the step's text says AT. */
+function withLocalTime(detail: string, at: string | undefined) {
+  if (!at || !detail.includes(AT)) return detail;
+  const [before, after] = detail.split(AT);
+  return (
+    <>
+      {before}
+      <LocalTime iso={at} />
+      {after}
+    </>
+  );
+}
 
 export const STAGE_COLOR: Record<Stage, string> = {
   Booked: '#60a5fa',
@@ -82,7 +96,7 @@ export function NextStepCard({ step, href, context, stage }: { step: NextStep; h
         <div className="min-w-0">
           {context && <p className="text-xs font-medium uppercase tracking-wider text-muted">{context}</p>}
           <p className="mt-0.5 font-medium">{step.title}</p>
-          <p className="mt-1 text-sm text-ink-soft">{step.detail}</p>
+          <p className="mt-1 text-sm text-ink-soft">{withLocalTime(step.detail, step.at)}</p>
         </div>
       </div>
     );

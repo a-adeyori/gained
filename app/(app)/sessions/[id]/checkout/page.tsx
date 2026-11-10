@@ -11,7 +11,7 @@ import type { EscrowStateKey } from '@/lib/escrow-states';
 import { meetingService } from '@/lib/meeting';
 import { baseCentsFor } from '@/lib/payout';
 import { CheckoutPanel } from './checkout-panel';
-import { LocalTime } from './local-time';
+import { LocalTime } from '@/components/local-time';
 
 export const metadata: Metadata = { title: 'Checkout' };
 

@@ -27,10 +27,16 @@ export type JourneySession = {
   tutor: { name: string };
 };
 
-/** What the viewer should do now. `quizId` actions need a signed link, built by the page. */
+/**
+ * What the viewer should do now. `quizId` actions need a signed link, built by the page.
+ * A wait's `detail` may contain AT, where the card shows `at` in the viewer's own time zone
+ * (the server can't format it: it doesn't know the viewer's zone).
+ */
 export type NextStep =
   | { kind: 'action'; title: string; detail: string; cta: string; href: string; quizId?: string }
-  | { kind: 'wait'; title: string; detail: string };
+  | { kind: 'wait'; title: string; detail: string; at?: string };
+
+export const AT = '{at}';
 
 const RETENTION_DELAY_MS = 48 * 3600_000;
 const first = (name: string) => name.split(' ')[0];
@@ -99,12 +105,12 @@ export function nextStep(s: JourneySession, viewerId: string, now = new Date()):
       const soon = s.start_at.getTime() - now.getTime() < 15 * 60_000;
       return soon
         ? { kind: 'action', title: `Start your session with ${student}`, detail: 'Open the session room, write what you taught, and tap End when you’re done.', cta: 'Open session room', href: `${page}/live` }
-        : { kind: 'wait', title: `Session with ${student}`, detail: `Opens ${when(s.start_at)}. ${baseline?.completed_at ? `${student} finished the warm-up.` : `${student} hasn’t done the warm-up yet.`}` };
+        : { kind: 'wait', title: `Session with ${student}`, detail: `Opens ${AT}. ${baseline?.completed_at ? `${student} finished the warm-up.` : `${student} hasn’t done the warm-up yet.`}`, at: s.start_at.toISOString() };
     }
     if (isPayer && !isStudent && isOpen(baseline, now)) {
       return { kind: 'action', title: `${student} has a warm-up quiz`, detail: 'Send them the link so their starting point is measured.', cta: 'Get the link', href: page };
     }
-    return { kind: 'wait', title: `Session with ${isTutor ? student : tutor}`, detail: `${when(s.start_at)}. Your tutor runs it from the session room.` };
+    return { kind: 'wait', title: `Session with ${isTutor ? student : tutor}`, detail: `${AT}. Your tutor runs it from the session room.`, at: s.start_at.toISOString() };
   }
 
   // After the session: the tutor confirms what was covered, so the quiz can be written.
@@ -134,11 +140,7 @@ export function nextStep(s: JourneySession, viewerId: string, now = new Date()):
   }
   if (!retention?.sent_at) {
     const opens = new Date(s.ended_at.getTime() + RETENTION_DELAY_MS);
-    return { kind: 'wait', title: 'Check-in quiz coming', detail: `Opens ${when(opens)}, to show what stuck.` };
+    return { kind: 'wait', title: 'Check-in quiz coming', detail: `Opens ${AT}, to show what stuck.`, at: opens.toISOString() };
   }
   return { kind: 'wait', title: 'Settling the payment', detail: 'The bonus is paid and the rest comes back automatically.' };
-}
-
-function when(d: Date) {
-  return d.toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
 }

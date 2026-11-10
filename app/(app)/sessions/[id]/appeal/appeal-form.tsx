@@ -1,6 +1,7 @@
 'use client';
 
 import { useActionState } from 'react';
+import { LocalTime } from '@/components/local-time';
 import { Button, Field, inputClass } from '@/components/ui';
 import { openAppeal } from '../actions';
 
@@ -20,7 +21,7 @@ export function AppealForm({ sessionId, closesAt }: { sessionId: string; closesA
         {pending ? 'Sending…' : 'Send appeal'}
       </Button>
       <p className="text-xs text-muted">
-        Open until {new Date(closesAt).toLocaleString('en-US', { weekday: 'short', hour: 'numeric', minute: '2-digit' })}.
+        Open until <LocalTime iso={closesAt} />.
       </p>
     </form>
   );

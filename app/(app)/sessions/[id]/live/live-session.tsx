@@ -7,6 +7,7 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button, ButtonLink, Card, Field, inputClass, JoinMeeting, PageTitle } from '@/components/ui';
+import { LocalTime } from '@/components/local-time';
 import type { TopicList } from '@/lib/claude';
 
 type Stage = 'before' | 'live' | 'ending' | 'processing' | 'topics' | 'done';
@@ -129,7 +130,7 @@ export function LiveSession(props: Props) {
             Planned: {props.plannedTopics}
             <br />
             <span className="text-sm text-muted">
-              Starts {new Date(props.startAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })} · Online
+              Starts <LocalTime iso={props.startAt} format="time" /> · Online
             </span>
           </>
         )}

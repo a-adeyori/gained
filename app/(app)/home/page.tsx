@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { JourneyBar, NextStepCard, RoleGuide, type GuideStep } from '@/components/journey';
 import { EscrowBadge, Money } from '@/components/ui';
+import { LocalTime } from '@/components/local-time';
 import { requireUser, type CurrentUser } from '@/lib/auth';
 import { normalizeSubjects } from '@/lib/booking';
 import { db } from '@/lib/db';
@@ -18,8 +19,6 @@ import { FamilyCard } from './family-card';
 
 export const metadata: Metadata = { title: 'Home' };
 
-const when = (d: Date) =>
-  d.toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
 
 const hrefFor = (step: NextStep) =>
   step.kind === 'action' && step.quizId ? `/quiz/${step.quizId}?t=${quizToken(step.quizId)}` : step.kind === 'action' ? step.href : undefined;
@@ -198,7 +197,7 @@ function SessionList({ title, sessions, viewer, steps }: { title: string; sessio
                     {s.subject} · {viewer.role === 'tutor' ? s.student.name : `with ${s.tutor.name}`}
                     {viewer.role === 'parent' && s.student_id !== viewer.id && <span className="text-muted"> for {s.student.name.split(' ')[0]}</span>}
                   </p>
-                  <p className="text-sm text-muted">{when(s.start_at)}</p>
+                  <p className="text-sm text-muted"><LocalTime iso={s.start_at.toISOString()} /></p>
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <JourneyBar stages={stageStatuses(s)} compact />

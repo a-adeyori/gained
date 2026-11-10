@@ -3,6 +3,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { EscrowBadge, Money, PageTitle } from '@/components/ui';
+import { LocalTime } from '@/components/local-time';
 import { requireUser } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { ESCROW_STATES, type EscrowStateKey } from '@/lib/escrow-states';
@@ -11,7 +12,6 @@ import { retryJob } from './actions';
 
 export const metadata: Metadata = { title: 'Admin' };
 
-const short = (d: Date) => d.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
 
 export default async function AdminPage({ searchParams }: PageProps<'/admin'>) {
   await requireUser('admin');
@@ -64,7 +64,7 @@ export default async function AdminPage({ searchParams }: PageProps<'/admin'>) {
                     {s.subject}: {s.student.name} / {s.tutor.name}
                   </Link>
                   <p className="text-xs text-muted">
-                    {short(s.start_at)} · {s.status}
+                    <LocalTime iso={s.start_at.toISOString()} /> · {s.status}
                     {s.is_seed && ' · seed'}
                   </p>
                 </td>

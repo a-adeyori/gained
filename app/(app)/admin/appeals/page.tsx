@@ -3,6 +3,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Card, EscrowBadge, Money, PageTitle } from '@/components/ui';
+import { LocalTime } from '@/components/local-time';
 import { requireUser } from '@/lib/auth';
 import { db } from '@/lib/db';
 import type { EscrowStateKey } from '@/lib/escrow-states';
@@ -37,7 +38,7 @@ export default async function AppealsPage() {
                   {s.escrow && <EscrowBadge state={s.escrow.state as EscrowStateKey} />}
                 </div>
                 <p className="mt-1 text-sm text-muted">
-                  Opened by {opener?.name ?? 'unknown'} ({opener?.role}) · {a.created_at.toLocaleString('en-US')}
+                  Opened by {opener?.name ?? 'unknown'} ({opener?.role}) · <LocalTime iso={a.created_at.toISOString()} />
                 </p>
                 <blockquote className="mt-3 border-l-2 border-line-strong pl-3 text-ink-soft">{a.reason}</blockquote>
                 <p className="num mt-3 text-sm text-ink-soft">
