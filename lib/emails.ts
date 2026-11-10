@@ -91,7 +91,7 @@ export function reminderEmail(p: {
   }
   if (p.to === 'student') {
     const warmUp = p.warmUpLink
-      ? `\n\nYou haven't done your warm-up quiz yet. It takes under 5 minutes and shows where you're starting, so your progress can be measured:\n${p.warmUpLink}`
+      ? `\n\nYou haven't done your warm-up quiz yet. There's no time limit. It shows where you're starting, so your progress can be measured:\n${p.warmUpLink}`
       : '';
     return {
       subject: `Starting soon: ${p.subject} with ${first(p.tutorName)}`,
@@ -122,13 +122,13 @@ export function quizEmail(p: {
   if (p.kind === 'baseline') {
     return {
       subject: `Warm-up quiz for ${p.subject}`,
-      text: `${hi}Before your ${p.subject} session with ${first(p.tutorName)}, take a 5-question warm-up. It shows where you're starting, so your progress can be measured. Under 5 minutes.\n\n${p.link}${closes}${sign}`,
+      text: `${hi}Before your ${p.subject} session with ${first(p.tutorName)}, take a 5-question warm-up. It shows where you're starting, so your progress can be measured. There's no time limit, so take your time.\n\n${p.link}${closes}${sign}`,
     };
   }
   if (p.kind === 'post') {
     return {
       subject: `Your ${p.subject} quiz is ready`,
-      text: `${hi}Here's your quiz on what you covered with ${first(p.tutorName)}: 5 fresh questions, under 5 minutes.\n\n${p.link}${closes}${sign}`,
+      text: `${hi}Here's your quiz on what you covered with ${first(p.tutorName)}: 5 fresh questions, with no time limit.\n\n${p.link}${closes}${sign}`,
     };
   }
   return {
