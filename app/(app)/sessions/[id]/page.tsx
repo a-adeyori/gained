@@ -19,7 +19,10 @@ import { baseCentsFor, computeSplit } from '@/lib/payout';
 import { nextStep, stageOf, stageStatuses } from '@/lib/journey';
 import { appealWindowClosesAt } from '@/lib/retention';
 import { quizToken } from '@/lib/signing';
+import { canCancel, freeCancelUntil } from '@/lib/cancellation';
+import { formatUsd } from '@/lib/escrow-states';
 import { confirmSession } from './actions';
+import { CancelCard } from './cancel-card';
 
 export const metadata: Metadata = { title: 'Session' };
 
@@ -44,6 +47,7 @@ export default async function SessionPage({ params }: PageProps<'/sessions/[id]'
   }
 
   const escrow = session.escrow;
+  if (session.status === 'cancelled') return <CancelledSession session={session} escrowState={escrow.state as EscrowStateKey} viewerId={user.id} />;
   const state = escrow.state as EscrowStateKey;
   const result = session.result;
   const quiz = (kind: 'baseline' | 'post' | 'retention') => session.quizzes.find((q) => q.kind === kind);
@@ -99,6 +103,7 @@ export default async function SessionPage({ params }: PageProps<'/sessions/[id]'
   const stepHref =
     step?.kind === 'action' ? (step.quizId ? `/quiz/${step.quizId}?t=${quizToken(step.quizId)}` : step.href) : null;
   const showStep = step && (step.kind === 'wait' || (stepHref && stepHref !== `/sessions/${id}`));
+  const cancel = canCancel(session, user, now);
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -143,6 +148,18 @@ export default async function SessionPage({ params }: PageProps<'/sessions/[id]'
         )}
 
         {state === 'held' && isFamily && <HeldNotCharged cents={session.price_cents} />}
+
+        {cancel.ok ? (
+          <CancelCard
+            sessionId={id}
+            as={cancel.as}
+            otherName={cancel.as === 'tutor' ? session.student.name : session.tutor.name}
+            price={formatUsd(session.price_cents)}
+            freeUntil={cancel.as === 'family' ? freeCancelUntil(session.start_at).toISOString() : null}
+          />
+        ) : (
+          !cancel.hidden && <p className="px-1 text-sm text-muted">{cancel.reason}</p>
+        )}
 
         {result?.pre_score != null && result.post_score != null ? (
           <Card className="space-y-8">
@@ -327,5 +344,80 @@ function QuizLink({ path, label, own }: { path: string; label: string; own: bool
         {path.split('?')[0]}
       </Link>
     </p>
+  );
+}
+
+/** A booking cancelled before it started: who cancelled, when, and that nothing was charged. */
+async function CancelledSession({
+  session,
+  escrowState,
+  viewerId,
+}: {
+  session: {
+    id: string;
+    subject: string;
+    start_at: Date;
+    price_cents: number;
+    tutor_id: string;
+    payer_id: string;
+    cancelled_at: Date | null;
+    cancelled_by_id: string | null;
+    cancel_reason: string | null;
+    pipeline_error: string | null;
+    tutor: { name: string };
+    student: { name: string };
+  };
+  escrowState: EscrowStateKey;
+  viewerId: string;
+}) {
+  const by = session.cancelled_by_id ? await db.user.findUnique({ where: { id: session.cancelled_by_id }, select: { name: true } }) : null;
+  const byName = session.cancelled_by_id === viewerId ? 'You' : (by?.name ?? 'Someone');
+  const isTutor = viewerId === session.tutor_id;
+  const released = escrowState === 'cancelled';
+  return (
+    <div className="mx-auto max-w-3xl">
+      <header className="mb-8">
+        <p className="text-sm font-medium text-muted">
+          <LocalTime iso={session.start_at.toISOString()} format="long" /> · Online
+        </p>
+        <h1 className="mt-1 font-display text-4xl leading-tight tracking-tight sm:text-5xl">
+          {session.subject} with {isTutor ? session.student.name : session.tutor.name}
+        </h1>
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          <EscrowBadge state="cancelled" />
+          <span className="text-sm text-ink-soft">
+            {byName} cancelled this session
+            {session.cancelled_at && (
+              <>
+                {' '}
+                on <LocalTime iso={session.cancelled_at.toISOString()} format="long" />
+              </>
+            )}
+            .
+          </span>
+        </div>
+      </header>
+      <Card className="space-y-3">
+        {session.cancel_reason && (
+          <p>
+            <span className="text-muted">Reason: </span>
+            {session.cancel_reason}
+          </p>
+        )}
+        {isTutor ? (
+          <p className="text-ink-soft">The time is open for bookings again. No payment is made for this session.</p>
+        ) : released ? (
+          <p className="text-ink-soft">
+            Nothing was charged. The <Money cents={session.price_cents} /> hold was released; your bank may take a few days to show it.
+          </p>
+        ) : (
+          <p className="text-ink-soft">
+            Releasing the <Money cents={session.price_cents} /> hold. Nothing will be charged.
+            {session.pipeline_error && ' This is taking longer than usual; the Gained team has been told.'}
+          </p>
+        )}
+        {!isTutor && <ButtonLink href="/book">Book another time</ButtonLink>}
+      </Card>
+    </div>
   );
 }

@@ -4,6 +4,7 @@
 
 import { task, type TaskContext } from '@renderinc/sdk/workflows';
 import {
+  cancelSessionStep,
   extractTopicsStep,
   gradeQuizStep,
   prepareQuizzesStep,
@@ -55,6 +56,13 @@ export const releasePayment = task(
   { name: 'releasePayment', retry, timeoutSeconds: 300 },
   async (_ctx: TaskContext, sessionId: string) => {
     await releasePaymentStep(sessionId);
+  },
+);
+
+export const cancelSession = task(
+  { name: 'cancelSession', retry, timeoutSeconds: 300 },
+  async (_ctx: TaskContext, sessionId: string) => {
+    await cancelSessionStep(sessionId);
   },
 );
 

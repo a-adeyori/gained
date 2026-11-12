@@ -1,6 +1,6 @@
-// The six escrow states, with the same label and colour on every screen. Safe for the browser.
+// The seven escrow states, with the same label and colour on every screen. Safe for the browser.
 
-export type EscrowStateKey = 'held' | 'base_paid' | 'awaiting_retention' | 'settled' | 'returned' | 'in_appeal';
+export type EscrowStateKey = 'held' | 'base_paid' | 'awaiting_retention' | 'settled' | 'returned' | 'in_appeal' | 'cancelled';
 
 export const ESCROW_STATES: Record<
   EscrowStateKey,
@@ -37,6 +37,12 @@ export const ESCROW_STATES: Record<
     outline: true,
     explain: 'Someone disputed a grade. The final payment waits until an admin reviews it.',
   },
+  cancelled: {
+    label: 'Cancelled',
+    color: 'var(--state-held)',
+    outline: true,
+    explain: 'Cancelled before the session. The hold was released, so nothing was charged.',
+  },
 };
 
 /**
@@ -61,6 +67,7 @@ export const ESCROW_STATE_HEX: Record<EscrowStateKey, string> = {
   settled: '#0f9d58',
   returned: '#8b7cf0',
   in_appeal: '#d93a30',
+  cancelled: '#8a877f',
 };
 
 export const formatUsd = (cents: number) =>

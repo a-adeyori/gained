@@ -4,7 +4,16 @@
 
 import { db } from './db';
 import { baseCentsFor } from './payout';
-import { bookedEmail, confirmHappenedEmail, familyEmail, quizEmail, reminderEmail, settledEmail, topicsReadyEmail } from './emails';
+import {
+  bookedEmail,
+  cancelledEmail,
+  confirmHappenedEmail,
+  familyEmail,
+  quizEmail,
+  reminderEmail,
+  settledEmail,
+  topicsReadyEmail,
+} from './emails';
 import { appUrl, sendEmail } from './mail';
 import { quizToken } from './signing';
 
@@ -45,11 +54,25 @@ export const notifyReminder = (sessionId: string) =>
     }
   });
 
+/** The booking was cancelled before it started and the hold released: tell everyone. */
+export const notifyCancelled = (sessionId: string) =>
+  safely('cancelled', async () => {
+    const s = await db.session.findUniqueOrThrow({ where: { id: sessionId }, include: withPeople });
+    const by = s.cancelled_by_id === s.tutor_id ? 'tutor' : s.cancelled_by_id === s.payer_id ? 'family' : 'admin';
+    const common = { by, subject: s.subject, studentName: s.student.name, tutorName: s.tutor.name, startAt: s.start_at, priceCents: s.price_cents, reason: s.cancel_reason } as const;
+    await sendEmail({ to: s.payer.email, ...cancelledEmail({ ...common, to: 'payer', timeZone: s.payer.time_zone, link: appUrl('/book') }) });
+    await sendEmail({ to: s.tutor.email, ...cancelledEmail({ ...common, to: 'tutor', timeZone: s.tutor.time_zone, link: appUrl('/tutor/availability') }) });
+    if (s.student_id !== s.payer_id) {
+      await sendEmail({ to: s.student.email, ...cancelledEmail({ ...common, to: 'student', timeZone: s.student.time_zone, link: appUrl('/home') }) });
+    }
+  });
+
 /** A quiz is open for the student: the warm-up, the post-session quiz or the 48-hour check-in. */
 export const notifyQuiz = (quizId: string) =>
   safely('quiz', async () => {
     const q = await db.quiz.findUniqueOrThrow({ where: { id: quizId }, include: { session: { include: withPeople } } });
     const s = q.session;
+    if (s.status === 'cancelled') return;
     await sendEmail({
       to: s.student.email,
       ...quizEmail({

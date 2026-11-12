@@ -11,6 +11,7 @@ export const JOBS = [
   'gradeQuiz',
   'releasePayment',
   'settleSession',
+  'cancelSession',
 ] as const;
 export type JobName = (typeof JOBS)[number];
 
@@ -29,6 +30,7 @@ export async function startJob(name: JobName, id: string, opts: { wait?: boolean
       gradeQuiz: steps.gradeQuizStep,
       releasePayment: steps.releasePaymentStep,
       settleSession: steps.settleSessionStep,
+      cancelSession: steps.cancelSessionStep,
     };
     const job = run[name](id).catch((err) => console.error(`Inline job ${name}(${id}) failed`, err));
     // Not awaited by default: the request returns while the step runs, as it would on Render.

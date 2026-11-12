@@ -79,6 +79,9 @@ export function topicNames(topicsJson: unknown): string[] {
 // Money is in dollars and scores 0-100, gains 0-1, because that is what AG Studio's currency and
 // percentage formats expect. Dates are 'YYYY-MM-DD' strings in UTC.
 
+/** Cancelled bookings never happened, so the dashboard leaves them out. */
+type ChartedState = Exclude<EscrowStateKey, 'cancelled'>;
+
 /** One 0/1 column per escrow state, so a chart can plot all six as series in a fixed order. */
 export const STATE_COLUMNS = {
   settled: 'stateSettled',
@@ -87,9 +90,9 @@ export const STATE_COLUMNS = {
   returned: 'stateReturned',
   held: 'stateHeld',
   in_appeal: 'stateInAppeal',
-} as const satisfies Record<EscrowStateKey, string>;
+} as const satisfies Record<ChartedState, string>;
 
-type StateColumns = Record<(typeof STATE_COLUMNS)[EscrowStateKey], 0 | 1>;
+type StateColumns = Record<(typeof STATE_COLUMNS)[ChartedState], 0 | 1>;
 
 export type SessionRow = StateColumns & {
   sessionId: string;
@@ -169,8 +172,8 @@ export type TutorSessionInput = {
 export function buildTutorStudioData(sessions: TutorSessionInput[], now = new Date()): TutorStudioData {
   const out: TutorStudioData = { asOf: now.toISOString(), sessions: [], earnings: [], topicGains: [] };
   for (const s of sessions) {
-    if (!s.escrow) continue;
-    const state = s.escrow.state as EscrowStateKey;
+    if (!s.escrow || s.escrow.state === 'cancelled') continue;
+    const state = s.escrow.state as ChartedState;
     const money = escrowMoney({ price_cents: s.price_cents, escrow: s.escrow, result: s.result });
     const r = s.result;
     const scoreChange = r?.pre_score != null && r.post_score != null ? round1(r.post_score - r.pre_score) : null;
