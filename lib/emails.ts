@@ -115,6 +115,44 @@ export function reminderEmail(p: {
   };
 }
 
+/** A session was moved to a new time (same price and payment hold). `by` is who moved it. */
+export function rescheduledEmail(p: {
+  to: 'payer' | 'student' | 'tutor';
+  by: 'family' | 'tutor' | 'admin';
+  subject: string;
+  studentName: string;
+  tutorName: string;
+  oldStart: Date;
+  newStart: Date;
+  meetingLink: string | null;
+  link: string;
+  /** The recipient's saved time zone. */
+  timeZone?: string | null;
+  /** Never set for a student who didn't pay. */
+  contact?: Contact;
+}): Mail {
+  const from = when(p.oldStart, p.timeZone);
+  const to = when(p.newStart, p.timeZone);
+  const where = `${p.meetingLink ? `\n\nJoin online: ${p.meetingLink}` : ''}${reach(p.contact)}`;
+  const mover = { family: p.to === 'payer' ? 'You' : 'The family', tutor: p.to === 'tutor' ? 'You' : p.tutorName, admin: 'The Gained team' }[p.by];
+  const withWhom = p.to === 'tutor' ? p.studentName : p.tutorName;
+  // "Ifenna moved the Math session", not "…with Ifenna", when the tutor moved it.
+  const what = p.by === 'tutor' && p.to !== 'tutor' ? `the ${p.subject} session` : `the ${p.subject} session with ${withWhom}`;
+  const body = `${mover} moved ${what}.\n\nNew time: ${to}\nWas: ${from}${where}`;
+  if (p.to === 'student') {
+    return {
+      subject: `New time: ${p.subject} with ${first(p.tutorName)}`,
+      text: `Hi ${first(p.studentName)},\n\n${body}${sign}`,
+    };
+  }
+  const money = p.to === 'payer' ? '\n\nThe price and your PayPal hold stay the same; nothing new is charged.' : '';
+  const other = p.by === 'tutor' && p.to === 'payer' ? ' If the new time doesn’t work, you can cancel it free from the session page.' : '';
+  return {
+    subject: `New time: ${p.subject} with ${withWhom}`,
+    text: `${body}${money}${other}\n\n${p.link}${sign}`,
+  };
+}
+
 /**
  * A booking was cancelled before it started. `by` is who cancelled. `feeCents` is what a late
  * cancellation paid the tutor (0 when free, and the whole hold was voided).

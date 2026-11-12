@@ -12,6 +12,7 @@ import {
   familyEmail,
   quizEmail,
   reminderEmail,
+  rescheduledEmail,
   settledEmail,
   topicsReadyEmail,
 } from './emails';
@@ -62,6 +63,20 @@ export const notifyReminder = (sessionId: string) =>
     // A parent who booked for themselves is the student, and already has the student's email.
     if (!selfBooked) {
       await sendEmail({ to: s.payer.email, ...reminderEmail({ ...common, to: 'payer', timeZone: s.payer.time_zone, contact: tutorContact, link: appUrl(`/sessions/${s.id}`) }) });
+    }
+  });
+
+/** The session was moved to a new time: tell everyone, with the new time in their own zone. */
+export const notifyRescheduled = (sessionId: string, oldStart: Date, byId: string) =>
+  safely('rescheduled', async () => {
+    const s = await db.session.findUniqueOrThrow({ where: { id: sessionId }, include: withPeople });
+    const by = byId === s.tutor_id ? 'tutor' : byId === s.payer_id ? 'family' : 'admin';
+    const { tutorContact, payerContact } = contacts(s);
+    const common = { by, subject: s.subject, studentName: s.student.name, tutorName: s.tutor.name, oldStart, newStart: s.start_at, meetingLink: s.tutor.meeting_link } as const;
+    await sendEmail({ to: s.payer.email, ...rescheduledEmail({ ...common, to: 'payer', timeZone: s.payer.time_zone, contact: tutorContact, link: appUrl(`/sessions/${s.id}`) }) });
+    await sendEmail({ to: s.tutor.email, ...rescheduledEmail({ ...common, to: 'tutor', timeZone: s.tutor.time_zone, contact: payerContact, link: appUrl(`/sessions/${s.id}`) }) });
+    if (s.student_id !== s.payer_id) {
+      await sendEmail({ to: s.student.email, ...rescheduledEmail({ ...common, to: 'student', timeZone: s.student.time_zone, link: appUrl('/home') }) });
     }
   });
 

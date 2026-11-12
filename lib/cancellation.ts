@@ -22,6 +22,7 @@ export type CancelSession = {
   tutor_id: string;
   payer_id: string;
   student_id: string;
+  free_cancel_until?: Date | null;
 };
 
 export type CancelWho = 'family' | 'tutor' | 'admin';
@@ -30,8 +31,12 @@ export type CancelCheck =
   | { ok: true; as: CancelWho; /** What the tutor is paid from the hold; 0 when free. */ feeCents: number }
   | { ok: false; reason: string; hidden?: boolean };
 
-/** When free cancellation ends for the family. */
-export const freeCancelUntil = (startAt: Date) => new Date(startAt.getTime() - FREE_CANCEL_HOURS * HOUR);
+/**
+ * When free cancellation ends for the family: 24 hours before the start, unless the family moved
+ * the session inside that window, which keeps the original deadline (lib/reschedule.ts).
+ */
+export const freeCancelUntil = (session: { start_at: Date; free_cancel_until?: Date | null }) =>
+  session.free_cancel_until ?? new Date(session.start_at.getTime() - FREE_CANCEL_HOURS * HOUR);
 
 export const lateFeeCents = (priceCents: number) => Math.round(priceCents * LATE_CANCEL_SHARE);
 
@@ -51,7 +56,7 @@ export function canCancel(session: CancelSession, user: { id: string; role: stri
   }
   if (isTutor) return { ok: true, as: 'tutor', feeCents: 0 };
   if (!isPayer) return { ok: true, as: 'admin', feeCents: 0 };
-  const late = now >= freeCancelUntil(session.start_at);
+  const late = now >= freeCancelUntil(session);
   return { ok: true, as: 'family', feeCents: late ? lateFeeCents(session.price_cents) : 0 };
 }
 
@@ -66,10 +71,11 @@ export function cancellationFeeCents(session: {
   payer_id: string;
   cancelled_at: Date | null;
   cancelled_by_id: string | null;
+  free_cancel_until?: Date | null;
 }): number {
   const byPayer = session.cancelled_by_id === session.payer_id && session.cancelled_by_id !== session.tutor_id;
   if (!byPayer || !session.cancelled_at) return 0;
-  return session.cancelled_at >= freeCancelUntil(session.start_at) ? lateFeeCents(session.price_cents) : 0;
+  return session.cancelled_at >= freeCancelUntil(session) ? lateFeeCents(session.price_cents) : 0;
 }
 
 /** Longest reason kept with a cancellation. */

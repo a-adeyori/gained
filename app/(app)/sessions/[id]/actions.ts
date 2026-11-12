@@ -6,9 +6,65 @@ import { requireUser } from '@/lib/auth';
 import { canCancel, MAX_CANCEL_REASON } from '@/lib/cancellation';
 import { db } from '@/lib/db';
 import { startJob } from '@/lib/jobs';
+import { notifyRescheduled } from '@/lib/notify';
+import { canReschedule, checkNewTime, freeCancelAfterMove, latestNewStart } from '@/lib/reschedule';
 import { appealWindowClosesAt } from '@/lib/retention';
+import { tutorSessionsAround } from '../../book/queries';
 
 export type CancelState = { error?: string } | undefined;
+
+/**
+ * Move the session to another of the tutor's open times (rules in lib/reschedule.ts). Same
+ * length, price and PayPal hold; the warm-up stays open until the new start, and the reminder
+ * goes out again before it. Everyone is emailed.
+ */
+export async function rescheduleSession(sessionId: string, _prev: CancelState, form: FormData): Promise<CancelState> {
+  const user = await requireUser();
+  const now = new Date();
+  const newStart = new Date(String(form.get('startAt') ?? ''));
+  let oldStart: Date;
+  try {
+    // Serializable, like booking, so the new time can't be taken by someone else at the same moment.
+    oldStart = await db.$transaction(
+      async (tx) => {
+        const session = await tx.session.findUnique({ where: { id: sessionId }, include: { escrow: true } });
+        if (!session?.escrow) throw new MoveError('Session not found.');
+        const who = canReschedule(session, user, now);
+        if (!who.ok) throw new MoveError(who.reason);
+        const latest = latestNewStart(session.escrow.authorized_at, now);
+        const [availability, others] = await Promise.all([
+          tx.availability.findMany({
+            where: { tutor_id: session.tutor_id, end_at: { gt: now }, start_at: { lt: latest } },
+            select: { start_at: true, end_at: true },
+          }),
+          tutorSessionsAround(session.tutor_id, now, latest, tx),
+        ]);
+        const check = checkNewTime(session, newStart, { availability, others, authorizedAt: session.escrow.authorized_at, now });
+        if (!check.ok) throw new MoveError(check.error);
+        await tx.session.update({
+          where: { id: sessionId },
+          data: {
+            start_at: newStart,
+            end_at: check.endAt,
+            rescheduled_from: session.start_at,
+            free_cancel_until: freeCancelAfterMove(session, who.as, now, newStart),
+            reminder_sent_at: null,
+          },
+        });
+        return session.start_at;
+      },
+      { isolationLevel: 'Serializable' },
+    );
+  } catch (err) {
+    if (err instanceof MoveError) return { error: err.message };
+    console.error('Reschedule failed', err);
+    return { error: 'That time was just taken or something went wrong. Pick a time again.' };
+  }
+  await notifyRescheduled(sessionId, oldStart, user.id);
+  redirect(`/sessions/${sessionId}`);
+}
+
+class MoveError extends Error {}
 
 /**
  * Cancel before the start (rules in lib/cancellation.ts). The session is marked cancelled at

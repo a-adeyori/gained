@@ -23,7 +23,7 @@ test('the payer cancels free until 24 hours before the start, then pays the tuto
   assert.deepEqual(canCancel(session(24.01), parent, now), { ok: true, as: 'family', feeCents: 0 });
   assert.deepEqual(canCancel(session(23), parent, now), { ok: true, as: 'family', feeCents: 3000 });
   assert.deepEqual(canCancel(session(0.1), parent, now), { ok: true, as: 'family', feeCents: 3000 });
-  assert.equal(freeCancelUntil(session(48).start_at).toISOString(), '2026-11-12T12:00:00.000Z');
+  assert.equal(freeCancelUntil(session(48)).toISOString(), '2026-11-12T12:00:00.000Z');
 });
 
 test('the tutor and admins can cancel any time before the start, and the family pays nothing', () => {
