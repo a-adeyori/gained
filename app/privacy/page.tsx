@@ -78,7 +78,7 @@ export default function PrivacyPage() {
         <h2>Your choices</h2>
         <ul>
           <li>You can see your sessions, results and how every answer was graded in the app, and appeal a grade within 72 hours.</li>
-          <li>To get a copy of your data or delete your account, email <a href="mailto:adeyori.adekunle@bulldogs.aamu.edu" className="underline underline-offset-4 hover:text-ink">adeyori.adekunle@bulldogs.aamu.edu</a>.</li>
+          <li>Delete your account any time from your Account page; it removes your account and the sessions, quizzes and results you’re part of. A parent deletes a child’s account from theirs. To get a copy of your data, email <a href="mailto:adeyori.adekunle@bulldogs.aamu.edu" className="underline underline-offset-4 hover:text-ink">adeyori.adekunle@bulldogs.aamu.edu</a>.</li>
         </ul>
       </section>
     </LegalPage>
