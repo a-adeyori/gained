@@ -22,6 +22,10 @@ export async function cancelSession(sessionId: string, _prev: CancelState, form:
   const now = new Date();
   const check = canCancel(session, user, now);
   if (!check.ok) return { error: check.reason };
+  // The free window can close while the confirmation is open; never charge a fee nobody saw.
+  if (check.feeCents > Number(form.get('shownFeeCents') ?? 0)) {
+    return { error: 'Free cancellation just ended, so cancelling now costs half the price. Refresh the page to see the new terms.' };
+  }
 
   const reason = String(form.get('reason') ?? '').trim().slice(0, MAX_CANCEL_REASON) || null;
   // Only a still-booked session that hasn't started, so a tutor tapping Start at the same moment wins.

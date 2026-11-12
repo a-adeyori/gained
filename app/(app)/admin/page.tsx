@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { EscrowBadge, Money, PageTitle } from '@/components/ui';
 import { LocalTime } from '@/components/local-time';
 import { requireUser } from '@/lib/auth';
+import { cancellationFeeCents } from '@/lib/cancellation';
 import { db } from '@/lib/db';
 import { ESCROW_STATES, type EscrowStateKey } from '@/lib/escrow-states';
 import { quizToken } from '@/lib/signing';
@@ -12,13 +13,18 @@ import { retryJob } from './actions';
 
 export const metadata: Metadata = { title: 'Admin' };
 
+/** How far back the tutor cancellation count looks. */
+const TUTOR_CANCEL_DAYS = 90;
+
 
 export default async function AdminPage({ searchParams }: PageProps<'/admin'>) {
   await requireUser('admin');
   const { state } = await searchParams;
   const filter = typeof state === 'string' && state in ESCROW_STATES ? (state as EscrowStateKey) : null;
 
-  const [counts, sessions] = await Promise.all([
+  const since = new Date();
+  since.setDate(since.getDate() - TUTOR_CANCEL_DAYS);
+  const [counts, sessions, cancellations] = await Promise.all([
     db.escrow.groupBy({ by: ['state'], _count: true }),
     db.session.findMany({
       where: { escrow: filter ? { state: filter } : { isNot: null } },
@@ -26,8 +32,22 @@ export default async function AdminPage({ searchParams }: PageProps<'/admin'>) {
       orderBy: { start_at: 'desc' },
       take: 200,
     }),
+    db.session.findMany({
+      where: { status: 'cancelled', cancelled_at: { gte: since }, escrow: { isNot: null } },
+      select: { tutor_id: true, cancelled_by_id: true, tutor: { select: { name: true } } },
+    }),
   ]);
   const countOf = (s: string) => counts.find((c) => c.state === s)?._count ?? 0;
+  // Tutors who cancel often let families down; there's no automatic penalty, so admins watch this.
+  const byTutor = new Map<string, { name: string; count: number }>();
+  for (const c of cancellations) {
+    if (c.cancelled_by_id !== c.tutor_id) continue;
+    const row = byTutor.get(c.tutor_id) ?? { name: c.tutor.name, count: 0 };
+    byTutor.set(c.tutor_id, { ...row, count: row.count + 1 });
+  }
+  const tutorCancels = [...byTutor.values()].sort((a, b) => b.count - a.count);
+  const cancelledBy = (s: { cancelled_by_id: string | null; tutor_id: string; payer_id: string }) =>
+    s.cancelled_by_id === s.tutor_id ? 'tutor' : s.cancelled_by_id === s.payer_id ? 'family' : 'admin';
 
   return (
     <>
@@ -42,6 +62,18 @@ export default async function AdminPage({ searchParams }: PageProps<'/admin'>) {
           </Link>
         ))}
       </nav>
+
+      <p className="mb-6 text-sm text-ink-soft">
+        <span className="font-medium text-ink">Cancelled by tutors, last {TUTOR_CANCEL_DAYS} days: </span>
+        {tutorCancels.length
+          ? tutorCancels.map((t, i) => (
+              <span key={t.name}>
+                {i > 0 && ', '}
+                {t.name} <span className="num font-medium text-ink">{t.count}</span>
+              </span>
+            ))
+          : 'none'}
+      </p>
 
       <div className="overflow-x-auto rounded-2xl border border-line bg-card">
         <table className="w-full min-w-[56rem] text-sm">
@@ -65,6 +97,8 @@ export default async function AdminPage({ searchParams }: PageProps<'/admin'>) {
                   </Link>
                   <p className="text-xs text-muted">
                     <LocalTime iso={s.start_at.toISOString()} /> · {s.status}
+                    {s.status === 'cancelled' && ` by ${cancelledBy(s)}`}
+                    {s.status === 'cancelled' && cancellationFeeCents(s) > 0 && ' · late'}
                     {s.is_seed && ' · seed'}
                   </p>
                 </td>

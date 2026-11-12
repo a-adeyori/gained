@@ -19,7 +19,7 @@ import { baseCentsFor, computeSplit } from '@/lib/payout';
 import { nextStep, stageOf, stageStatuses } from '@/lib/journey';
 import { appealWindowClosesAt } from '@/lib/retention';
 import { quizToken } from '@/lib/signing';
-import { canCancel, freeCancelUntil } from '@/lib/cancellation';
+import { canCancel, cancellationFeeCents, freeCancelUntil } from '@/lib/cancellation';
 import { formatUsd } from '@/lib/escrow-states';
 import { confirmSession } from './actions';
 import { CancelCard } from './cancel-card';
@@ -156,6 +156,11 @@ export default async function SessionPage({ params }: PageProps<'/sessions/[id]'
             otherName={cancel.as === 'tutor' ? session.student.name : session.tutor.name}
             price={formatUsd(session.price_cents)}
             freeUntil={cancel.as === 'family' ? freeCancelUntil(session.start_at).toISOString() : null}
+            late={
+              cancel.feeCents > 0
+                ? { feeCents: cancel.feeCents, fee: formatUsd(cancel.feeCents), rest: formatUsd(session.price_cents - cancel.feeCents) }
+                : null
+            }
           />
         ) : (
           !cancel.hidden && <p className="px-1 text-sm text-muted">{cancel.reason}</p>
@@ -374,6 +379,7 @@ async function CancelledSession({
   const byName = session.cancelled_by_id === viewerId ? 'You' : (by?.name ?? 'Someone');
   const isTutor = viewerId === session.tutor_id;
   const released = escrowState === 'cancelled';
+  const fee = cancellationFeeCents(session);
   return (
     <div className="mx-auto max-w-3xl">
       <header className="mb-8">
@@ -404,15 +410,41 @@ async function CancelledSession({
             {session.cancel_reason}
           </p>
         )}
+        {fee > 0 && (
+          <p>
+            Late cancellation (less than 24 hours before the start): <Money cents={fee} /> of <Money cents={session.price_cents} /> goes to{' '}
+            {isTutor ? 'you' : session.tutor.name}.
+          </p>
+        )}
         {isTutor ? (
-          <p className="text-ink-soft">The time is open for bookings again. No payment is made for this session.</p>
+          <p className="text-ink-soft">
+            The time is open for bookings again.{' '}
+            {fee > 0 ? 'Your half is paid to your PayPal email, minus the platform fee.' : 'No payment is made for this session.'}
+          </p>
         ) : released ? (
           <p className="text-ink-soft">
-            Nothing was charged. The <Money cents={session.price_cents} /> hold was released; your bank may take a few days to show it.
+            {fee > 0 ? (
+              <>
+                <Money cents={fee} /> was charged, and the other <Money cents={session.price_cents - fee} /> of the hold was released
+              </>
+            ) : (
+              <>
+                Nothing was charged. The <Money cents={session.price_cents} /> hold was released
+              </>
+            )}
+            ; your bank may take a few days to show it.
           </p>
         ) : (
           <p className="text-ink-soft">
-            Releasing the <Money cents={session.price_cents} /> hold. Nothing will be charged.
+            {fee > 0 ? (
+              <>
+                Charging <Money cents={fee} /> and releasing the other <Money cents={session.price_cents - fee} />.
+              </>
+            ) : (
+              <>
+                Releasing the <Money cents={session.price_cents} /> hold. Nothing will be charged.
+              </>
+            )}
             {session.pipeline_error && ' This is taking longer than usual; the Gained team has been told.'}
           </p>
         )}
