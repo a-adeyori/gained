@@ -47,7 +47,7 @@ export default function PrivacyPage() {
           <li><strong>Brevo:</strong> sending email (quiz links, booking and results notices, sign-in links).</li>
           <li><strong>Render:</strong> hosting the app and its database, in the United States.</li>
         </ul>
-        <p>Within Gained, a session’s results are visible to its student, the paying parent, the tutor, and our admins (who review appeals). We don’t sell personal data or use it for advertising.</p>
+        <p>Within Gained, a session’s results are visible to its student, the paying parent, the tutor, and our admins (who review appeals). Once a session is booked, the tutor and the person who paid can see each other’s name and email address, so they can arrange or move the session. A student who didn’t pay doesn’t see the tutor’s email. We don’t sell personal data or use it for advertising.</p>
       </section>
 
       <section>

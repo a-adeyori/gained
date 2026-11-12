@@ -28,13 +28,20 @@ async function safely(what: string, fn: () => Promise<unknown>) {
 
 const withPeople = { tutor: true, student: true, payer: true } as const;
 
+/** The tutor and the payer can email each other about a session; a student who didn't pay can't. */
+const contacts = (s: { tutor: { name: string; email: string }; payer: { name: string; email: string } }) => ({
+  tutorContact: { name: s.tutor.name, email: s.tutor.email },
+  payerContact: { name: s.payer.name, email: s.payer.email },
+});
+
 /** The hold is approved: the session is booked. */
 export const notifyBooked = (sessionId: string) =>
   safely('booked', async () => {
     const s = await db.session.findUniqueOrThrow({ where: { id: sessionId }, include: withPeople });
     const common = { subject: s.subject, studentName: s.student.name, tutorName: s.tutor.name, startAt: s.start_at, priceCents: s.price_cents, meetingLink: s.tutor.meeting_link };
-    await sendEmail({ to: s.payer.email, ...bookedEmail({ ...common, to: 'payer', timeZone: s.payer.time_zone, link: appUrl(`/sessions/${s.id}`) }) });
-    await sendEmail({ to: s.tutor.email, ...bookedEmail({ ...common, to: 'tutor', timeZone: s.tutor.time_zone, link: appUrl('/home') }) });
+    const { tutorContact, payerContact } = contacts(s);
+    await sendEmail({ to: s.payer.email, ...bookedEmail({ ...common, to: 'payer', timeZone: s.payer.time_zone, contact: tutorContact, link: appUrl(`/sessions/${s.id}`) }) });
+    await sendEmail({ to: s.tutor.email, ...bookedEmail({ ...common, to: 'tutor', timeZone: s.tutor.time_zone, contact: payerContact, link: appUrl('/home') }) });
     if (s.student_id !== s.payer_id) {
       await sendEmail({ to: s.student.email, ...bookedEmail({ ...common, to: 'student', timeZone: s.student.time_zone, link: appUrl('/home') }) });
     }
@@ -47,11 +54,14 @@ export const notifyReminder = (sessionId: string) =>
     const baseline = s.quizzes.find((q) => q.kind === 'baseline');
     const warmUpLink = baseline?.sent_at && !baseline.completed_at ? appUrl(`/quiz/${baseline.id}?t=${quizToken(baseline.id)}`) : null;
     const common = { subject: s.subject, studentName: s.student.name, tutorName: s.tutor.name, startAt: s.start_at, meetingLink: s.tutor.meeting_link, warmUpLink };
-    await sendEmail({ to: s.tutor.email, ...reminderEmail({ ...common, to: 'tutor', timeZone: s.tutor.time_zone, link: appUrl(`/sessions/${s.id}/live`) }) });
-    await sendEmail({ to: s.student.email, ...reminderEmail({ ...common, to: 'student', timeZone: s.student.time_zone, link: appUrl('/home') }) });
+    const { tutorContact, payerContact } = contacts(s);
+    const selfBooked = s.student_id === s.payer_id;
+    await sendEmail({ to: s.tutor.email, ...reminderEmail({ ...common, to: 'tutor', timeZone: s.tutor.time_zone, contact: payerContact, link: appUrl(`/sessions/${s.id}/live`) }) });
+    // A student who didn't pay never gets the tutor's email; one who booked for themselves does.
+    await sendEmail({ to: s.student.email, ...reminderEmail({ ...common, to: 'student', timeZone: s.student.time_zone, contact: selfBooked ? tutorContact : null, link: appUrl('/home') }) });
     // A parent who booked for themselves is the student, and already has the student's email.
-    if (s.student_id !== s.payer_id) {
-      await sendEmail({ to: s.payer.email, ...reminderEmail({ ...common, to: 'payer', timeZone: s.payer.time_zone, link: appUrl(`/sessions/${s.id}`) }) });
+    if (!selfBooked) {
+      await sendEmail({ to: s.payer.email, ...reminderEmail({ ...common, to: 'payer', timeZone: s.payer.time_zone, contact: tutorContact, link: appUrl(`/sessions/${s.id}`) }) });
     }
   });
 

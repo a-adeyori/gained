@@ -32,6 +32,10 @@ const when = (d: Date, timeZone?: string | null) =>
   });
 const sign = '\n\nGained';
 
+/** Who the recipient can email about the session: the tutor for the payer, the payer for the tutor. */
+type Contact = { name: string; email: string } | null | undefined;
+const reach = (c: Contact) => (c ? `\n\nTo reach ${c.name}, email ${c.email}.` : '');
+
 export function bookedEmail(p: {
   to: 'payer' | 'student' | 'tutor';
   subject: string;
@@ -44,9 +48,11 @@ export function bookedEmail(p: {
   link: string;
   /** The recipient's saved time zone. */
   timeZone?: string | null;
+  /** Never set for a student who didn't pay. */
+  contact?: Contact;
 }): Mail {
   const at = when(p.startAt, p.timeZone);
-  const where = p.meetingLink ? `\n\nJoin online: ${p.meetingLink}` : '';
+  const where = `${p.meetingLink ? `\n\nJoin online: ${p.meetingLink}` : ''}${reach(p.contact)}`;
   if (p.to === 'tutor') {
     return {
       subject: `New booking: ${p.subject} with ${p.studentName}`,
@@ -80,9 +86,11 @@ export function reminderEmail(p: {
   warmUpLink: string | null;
   /** The recipient's saved time zone. */
   timeZone?: string | null;
+  /** Never set for a student who didn't pay. */
+  contact?: Contact;
 }): Mail {
   const at = when(p.startAt, p.timeZone);
-  const where = p.meetingLink ? `\n\nJoin online: ${p.meetingLink}` : '';
+  const where = `${p.meetingLink ? `\n\nJoin online: ${p.meetingLink}` : ''}${reach(p.contact)}`;
   if (p.to === 'tutor') {
     return {
       subject: `Starting soon: ${p.subject} with ${p.studentName}`,
