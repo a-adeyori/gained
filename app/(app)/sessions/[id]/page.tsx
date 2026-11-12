@@ -34,6 +34,7 @@ export default async function SessionPage({ params }: PageProps<'/sessions/[id]'
     include: {
       tutor: true,
       student: true,
+      payer: { select: { name: true, email: true } },
       escrow: true,
       result: true,
       quizzes: { include: { answers: { orderBy: { question_index: 'asc' } } } },
@@ -120,6 +121,12 @@ export default async function SessionPage({ params }: PageProps<'/sessions/[id]'
         </div>
         {/* Until the session ends, the tutor's meeting link is how everyone gets there. */}
         {!session.ended_at && session.status !== 'cancelled' && <JoinMeeting link={session.tutor.meeting_link} className="mt-5" />}
+        {/* The tutor and the payer can reach each other (never a child who didn't pay). */}
+        {isTutor ? (
+          <ContactLine role={session.payer_id === session.student_id ? 'Student' : 'Parent'} person={session.payer} topic={`${session.subject} session`} className="mt-4" />
+        ) : (
+          user.id === session.payer_id && <ContactLine role="Tutor" person={session.tutor} topic={`${session.subject} session`} className="mt-4" />
+        )}
         <div className="mt-8">
           <JourneyBar stages={stageStatuses(session)} />
         </div>
@@ -451,5 +458,20 @@ async function CancelledSession({
         {!isTutor && <ButtonLink href="/book">Book another time</ButtonLink>}
       </Card>
     </div>
+  );
+}
+
+/** Who to email about this session: the tutor for the payer, the payer for the tutor. */
+function ContactLine({ role, person, topic, className }: { role: string; person: { name: string; email: string }; topic: string; className?: string }) {
+  return (
+    <p className={`text-sm text-ink-soft ${className ?? ''}`}>
+      {role}: {person.name} ·{' '}
+      <a
+        href={`mailto:${person.email}?subject=${encodeURIComponent(`Gained: ${topic}`)}`}
+        className="font-medium text-ink underline underline-offset-4"
+      >
+        {person.email}
+      </a>
+    </p>
   );
 }
