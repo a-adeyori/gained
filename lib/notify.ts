@@ -2,6 +2,7 @@
 // throws, so a notification problem never interrupts a booking, a quiz or a payment.
 // Server-only. The wording lives in lib/emails.ts.
 
+import { cancellationFeeCents } from './cancellation';
 import { db } from './db';
 import { baseCentsFor } from './payout';
 import {
@@ -59,7 +60,16 @@ export const notifyCancelled = (sessionId: string) =>
   safely('cancelled', async () => {
     const s = await db.session.findUniqueOrThrow({ where: { id: sessionId }, include: withPeople });
     const by = s.cancelled_by_id === s.tutor_id ? 'tutor' : s.cancelled_by_id === s.payer_id ? 'family' : 'admin';
-    const common = { by, subject: s.subject, studentName: s.student.name, tutorName: s.tutor.name, startAt: s.start_at, priceCents: s.price_cents, reason: s.cancel_reason } as const;
+    const common = {
+      by,
+      subject: s.subject,
+      studentName: s.student.name,
+      tutorName: s.tutor.name,
+      startAt: s.start_at,
+      priceCents: s.price_cents,
+      feeCents: cancellationFeeCents(s),
+      reason: s.cancel_reason,
+    } as const;
     await sendEmail({ to: s.payer.email, ...cancelledEmail({ ...common, to: 'payer', timeZone: s.payer.time_zone, link: appUrl('/book') }) });
     await sendEmail({ to: s.tutor.email, ...cancelledEmail({ ...common, to: 'tutor', timeZone: s.tutor.time_zone, link: appUrl('/tutor/availability') }) });
     if (s.student_id !== s.payer_id) {

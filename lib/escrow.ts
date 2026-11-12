@@ -14,6 +14,7 @@ import {
 } from './paypal';
 import { notifySettled } from './notify';
 import { baseCentsFor, computeSplit, tutorNetCents } from './payout';
+import { cancellationFeeCents } from './cancellation';
 
 const saveEscrow = (sessionId: string) => async (patch: EscrowAuthPatch) => {
   await db.escrow.update({ where: { session_id: sessionId }, data: patch });
@@ -54,7 +55,7 @@ export async function authorizeBooking(sessionId: string) {
 
 // --- Captures and payouts (workflow only) ------------------------------------------------
 
-async function payTutor(sessionId: string, part: 'base' | 'bonus', capturedCents: number) {
+async function payTutor(sessionId: string, part: 'base' | 'bonus' | 'late-cancel', capturedCents: number) {
   const session = await db.session.findUniqueOrThrow({ where: { id: sessionId }, include: { tutor: true } });
   if (!session.tutor.paypal_email || capturedCents <= 0) return null;
   try {
@@ -62,7 +63,7 @@ async function payTutor(sessionId: string, part: 'base' | 'bonus', capturedCents
       senderBatchId: `session-${sessionId}-${part}`,
       receiverEmail: session.tutor.paypal_email,
       amountCents: tutorNetCents(capturedCents),
-      note: `Gained: ${session.subject} session, ${part}`,
+      note: `Gained: ${session.subject} session, ${part === 'late-cancel' ? 'late cancellation' : part}`,
     });
     return payout.batch_header.payout_batch_id;
   } catch (err) {
@@ -185,21 +186,43 @@ export async function settle(sessionId: string) {
 }
 
 /**
- * A booking was cancelled before it started: void the whole hold, so nothing is charged. Safe to
- * repeat; a hold PayPal already voided or let expire needs nothing more.
+ * A booking was cancelled before it started (lib/cancellation.ts). Usually the whole hold is
+ * voided, so nothing is charged. A late cancellation by the family captures half for the tutor,
+ * and that final capture releases the rest. Safe to repeat: both PayPal calls are idempotent,
+ * and a hold PayPal already voided or let expire needs nothing more.
  */
 export async function cancelHold(sessionId: string) {
   const escrow = await db.escrow.findUnique({ where: { session_id: sessionId }, include: { session: true } });
   // An unpaid booking has no hold to release.
   if (!escrow || escrow.state === 'cancelled') return escrow;
   if (escrow.base_capture_id) throw new Error(`Session ${sessionId} was already paid out, so its hold can't be voided`);
+  const priceCents = escrow.session.price_cents;
+
+  const feeCents = cancellationFeeCents(escrow.session);
+  if (feeCents > 0) {
+    const { capture } = await captureEscrow(escrow, {
+      amountCents: feeCents,
+      finalCapture: true,
+      key: `session-${sessionId}-late-cancel`,
+      holdCents: priceCents,
+      save: saveEscrow(sessionId),
+      noteToPayer: 'Late cancellation: half the session price goes to the tutor.',
+    });
+    await db.escrow.update({
+      where: { session_id: sessionId },
+      data: { state: 'cancelled', base_capture_id: capture.id, returned_cents: priceCents - feeCents },
+    });
+    const payoutId = await payTutor(sessionId, 'late-cancel', feeCents);
+    return db.escrow.update({ where: { session_id: sessionId }, data: { base_payout_id: payoutId } });
+  }
+
   const auth = await getAuthorization(escrow.authorization_id);
   if (auth.status !== 'VOIDED' && auth.status !== 'EXPIRED') {
     await voidAuthorization(escrow.authorization_id, `session-${sessionId}-cancel`);
   }
   return db.escrow.update({
     where: { session_id: sessionId },
-    data: { state: 'cancelled', returned_cents: escrow.session.price_cents },
+    data: { state: 'cancelled', returned_cents: priceCents },
   });
 }
 

@@ -107,7 +107,10 @@ export function reminderEmail(p: {
   };
 }
 
-/** A booking was cancelled before it started. `by` is who cancelled; the hold was voided. */
+/**
+ * A booking was cancelled before it started. `by` is who cancelled. `feeCents` is what a late
+ * cancellation paid the tutor (0 when free, and the whole hold was voided).
+ */
 export function cancelledEmail(p: {
   to: 'payer' | 'student' | 'tutor';
   by: 'family' | 'tutor' | 'admin';
@@ -116,19 +119,26 @@ export function cancelledEmail(p: {
   tutorName: string;
   startAt: Date;
   priceCents: number;
+  feeCents: number;
   reason: string | null;
   link: string;
   /** The recipient's saved time zone. */
   timeZone?: string | null;
 }): Mail {
   const at = when(p.startAt, p.timeZone);
+  const fee = formatUsd(p.feeCents);
+  const rest = formatUsd(p.priceCents - p.feeCents);
   const who = { family: 'The family', tutor: p.tutorName, admin: 'The Gained team' }[p.by];
   const said = p.reason ? `\n\nReason given: ${p.reason}` : '';
   if (p.to === 'tutor') {
     const lead = p.by === 'tutor' ? `You cancelled your ${p.subject} session with ${p.studentName} on ${at}.` : `${who} cancelled the ${p.subject} session with ${p.studentName} on ${at}.`;
     return {
       subject: `Cancelled: ${p.subject} with ${p.studentName}`,
-      text: `${lead}${said}\n\nThat time is open for bookings again. No payment is made for this session.\n${p.link}${sign}`,
+      text: `${lead}${said}\n\nThat time is open for bookings again. ${
+        p.feeCents > 0
+          ? `It was cancelled less than 24 hours before the start, so you're paid ${fee}, half the price, to your PayPal email, minus the platform fee.`
+          : 'No payment is made for this session.'
+      }\n${p.link}${sign}`,
     };
   }
   const lead =
@@ -145,7 +155,11 @@ export function cancelledEmail(p: {
   }
   return {
     subject: `Cancelled: ${p.subject} with ${p.tutorName}`,
-    text: `${lead}${said}\n\nNothing was charged. The ${formatUsd(p.priceCents)} hold on your PayPal account is released; your bank may take a few days to show it.\n\nYou can book another time whenever you like:\n${p.link}${sign}`,
+    text: `${lead}${said}\n\n${
+      p.feeCents > 0
+        ? `It was cancelled less than 24 hours before the start, so ${fee} (half the price) was charged and goes to ${first(p.tutorName)} for the time they set aside. The other ${rest} of the hold is released; your bank may take a few days to show it.`
+        : `Nothing was charged. The ${formatUsd(p.priceCents)} hold on your PayPal account is released; your bank may take a few days to show it.`
+    }\n\nYou can book another time whenever you like:\n${p.link}${sign}`,
   };
 }
 

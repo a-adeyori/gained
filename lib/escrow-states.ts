@@ -41,7 +41,7 @@ export const ESCROW_STATES: Record<
     label: 'Cancelled',
     color: 'var(--state-held)',
     outline: true,
-    explain: 'Cancelled before the session. The hold was released, so nothing was charged.',
+    explain: 'Cancelled before the session. The hold was released, apart from half the price if it was a late cancellation.',
   },
 };
 
