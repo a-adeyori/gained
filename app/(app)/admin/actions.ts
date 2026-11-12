@@ -57,6 +57,9 @@ export async function retryJob(sessionId: string, form: FormData) {
   await requireUser('admin');
   const job = String(form.get('job')) as JobName;
   if (!JOBS.includes(job)) return;
+  // A cancelled booking only ever has its hold released; no other step may run on it.
+  const session = await db.session.findUnique({ where: { id: sessionId }, select: { status: true } });
+  if (!session || (session.status === 'cancelled') !== (job === 'cancelSession')) return;
   if (job === 'gradeQuiz') {
     const quizId = String(form.get('quiz_id') ?? '');
     if (quizId) await startJob('gradeQuiz', quizId);

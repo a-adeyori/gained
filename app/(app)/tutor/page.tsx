@@ -16,7 +16,7 @@ const day = (d: Date) => d.toISOString().slice(0, 10);
 export default async function TutorDashboardPage() {
   const user = await requireUser('tutor');
   const { _count, _min, _max } = await db.session.aggregate({
-    where: { tutor_id: user.id, escrow: { isNot: null } },
+    where: { tutor_id: user.id, escrow: { is: { state: { not: 'cancelled' } } } },
     _count: { _all: true },
     _min: { start_at: true },
     _max: { start_at: true },

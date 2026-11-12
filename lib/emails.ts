@@ -107,6 +107,48 @@ export function reminderEmail(p: {
   };
 }
 
+/** A booking was cancelled before it started. `by` is who cancelled; the hold was voided. */
+export function cancelledEmail(p: {
+  to: 'payer' | 'student' | 'tutor';
+  by: 'family' | 'tutor' | 'admin';
+  subject: string;
+  studentName: string;
+  tutorName: string;
+  startAt: Date;
+  priceCents: number;
+  reason: string | null;
+  link: string;
+  /** The recipient's saved time zone. */
+  timeZone?: string | null;
+}): Mail {
+  const at = when(p.startAt, p.timeZone);
+  const who = { family: 'The family', tutor: p.tutorName, admin: 'The Gained team' }[p.by];
+  const said = p.reason ? `\n\nReason given: ${p.reason}` : '';
+  if (p.to === 'tutor') {
+    const lead = p.by === 'tutor' ? `You cancelled your ${p.subject} session with ${p.studentName} on ${at}.` : `${who} cancelled the ${p.subject} session with ${p.studentName} on ${at}.`;
+    return {
+      subject: `Cancelled: ${p.subject} with ${p.studentName}`,
+      text: `${lead}${said}\n\nThat time is open for bookings again. No payment is made for this session.\n${p.link}${sign}`,
+    };
+  }
+  const lead =
+    p.by === 'family'
+      ? `The ${p.subject} session with ${p.tutorName} on ${at} is cancelled.`
+      : p.by === 'tutor'
+        ? `${p.tutorName} cancelled the ${p.subject} session on ${at}.`
+        : `${who} cancelled the ${p.subject} session with ${p.tutorName} on ${at}.`;
+  if (p.to === 'student') {
+    return {
+      subject: `Cancelled: ${p.subject} with ${first(p.tutorName)}`,
+      text: `Hi ${first(p.studentName)},\n\n${lead}${said}\n\nThere's nothing you need to do.${sign}`,
+    };
+  }
+  return {
+    subject: `Cancelled: ${p.subject} with ${p.tutorName}`,
+    text: `${lead}${said}\n\nNothing was charged. The ${formatUsd(p.priceCents)} hold on your PayPal account is released; your bank may take a few days to show it.\n\nYou can book another time whenever you like:\n${p.link}${sign}`,
+  };
+}
+
 export function quizEmail(p: {
   kind: 'baseline' | 'post' | 'retention';
   studentName: string;

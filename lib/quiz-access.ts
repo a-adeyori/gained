@@ -26,7 +26,7 @@ export function quizWindow(quiz: QuizRow, now = new Date()): 'open' | 'not-sent'
   if (!quiz.sent_at) return 'not-sent';
   if (quiz.closes_at && now >= quiz.closes_at) return 'closed';
   if (quiz.kind === 'baseline' && now.getTime() > quiz.session.start_at.getTime() + BASELINE_GRACE_MS) return 'closed';
-  if (['settling', 'settled'].includes(quiz.session.status)) return 'closed';
+  if (['settling', 'settled', 'cancelled'].includes(quiz.session.status)) return 'closed';
   return 'open';
 }
 

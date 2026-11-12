@@ -8,11 +8,12 @@
 //   both sides confirm   -> releasePayment (the 80% base)
 //   student submits quiz -> gradeQuiz
 //   cron, after retention and the appeal window -> settleSession
+//   someone cancels before the start -> cancelSession (void the hold)
 
 import { AiFailure, extractTopics, gradeWritten, summarizeResult, writeBaseline, writeQuiz, type Question, type TopicList } from './claude';
 import { db } from './db';
-import { notifyQuiz, notifyTopicsReady } from './notify';
-import { captureBase, settle } from './escrow';
+import { notifyCancelled, notifyQuiz, notifyTopicsReady } from './notify';
+import { cancelHold, captureBase, settle } from './escrow';
 import { gradeDeterministic, quizScore } from './grading';
 
 const message = (err: unknown) => (err instanceof Error ? err.message : String(err));
@@ -30,6 +31,7 @@ export async function writeBaselineStep(sessionId: string) {
   const existing = await db.quiz.findUnique({ where: { session_id_kind: { session_id: sessionId, kind: 'baseline' } } });
   if (existing) return existing.id;
   const session = await db.session.findUniqueOrThrow({ where: { id: sessionId } });
+  if (session.status === 'cancelled') return null;
   try {
     const questions = await writeBaseline(session.subject, session.planned_topics);
     const quiz = await db.quiz.create({
@@ -128,6 +130,20 @@ export async function releasePaymentStep(sessionId: string) {
 
 export async function settleSessionStep(sessionId: string) {
   await settle(sessionId);
+}
+
+/** After someone cancels (lib/cancellation.ts): release the hold, then tell everyone. */
+export async function cancelSessionStep(sessionId: string) {
+  const session = await db.session.findUniqueOrThrow({ where: { id: sessionId } });
+  if (session.status !== 'cancelled') throw new Error(`Session ${sessionId} isn't cancelled`);
+  try {
+    await cancelHold(sessionId);
+  } catch (err) {
+    // Shown on /admin with a retry; the family is emailed once the hold is really released.
+    await recordError(sessionId, 'Releasing the hold', err);
+    throw err;
+  }
+  await notifyCancelled(sessionId);
 }
 
 // --- Grading --------------------------------------------------------------------------------

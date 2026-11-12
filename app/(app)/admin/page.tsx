@@ -101,11 +101,17 @@ export default async function AdminPage({ searchParams }: PageProps<'/admin'>) {
                       <option value="" disabled>
                         Re-run…
                       </option>
-                      <option value="writeBaseline">Baseline</option>
-                      <option value="processSession">Topics</option>
-                      <option value="prepareQuizzes">Write quizzes</option>
-                      <option value="releasePayment">Release base</option>
-                      <option value="settleSession">Settle</option>
+                      {s.status === 'cancelled' ? (
+                        <option value="cancelSession">Release hold</option>
+                      ) : (
+                        <>
+                          <option value="writeBaseline">Baseline</option>
+                          <option value="processSession">Topics</option>
+                          <option value="prepareQuizzes">Write quizzes</option>
+                          <option value="releasePayment">Release base</option>
+                          <option value="settleSession">Settle</option>
+                        </>
+                      )}
                     </select>
                     <button className="rounded-lg border border-line px-2 py-1 text-xs hover:bg-surface-2">Go</button>
                   </form>

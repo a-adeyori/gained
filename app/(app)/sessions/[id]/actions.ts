@@ -3,9 +3,37 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { requireUser } from '@/lib/auth';
+import { canCancel, MAX_CANCEL_REASON } from '@/lib/cancellation';
 import { db } from '@/lib/db';
 import { startJob } from '@/lib/jobs';
 import { appealWindowClosesAt } from '@/lib/retention';
+
+export type CancelState = { error?: string } | undefined;
+
+/**
+ * Cancel before the start (rules in lib/cancellation.ts). The session is marked cancelled at
+ * once, so the slot reopens and no quiz or reminder goes out; the cancelSession job then voids
+ * the PayPal hold and emails everyone.
+ */
+export async function cancelSession(sessionId: string, _prev: CancelState, form: FormData): Promise<CancelState> {
+  const user = await requireUser();
+  const session = await db.session.findUnique({ where: { id: sessionId } });
+  if (!session) return { error: 'Session not found.' };
+  const now = new Date();
+  const check = canCancel(session, user, now);
+  if (!check.ok) return { error: check.reason };
+
+  const reason = String(form.get('reason') ?? '').trim().slice(0, MAX_CANCEL_REASON) || null;
+  // Only a still-booked session that hasn't started, so a tutor tapping Start at the same moment wins.
+  const { count } = await db.session.updateMany({
+    where: { id: sessionId, status: 'booked', start_at: { gt: now } },
+    data: { status: 'cancelled', cancelled_at: now, cancelled_by_id: user.id, cancel_reason: reason },
+  });
+  if (!count) return { error: 'The session has already started or changed. Refresh the page.' };
+
+  await startJob('cancelSession', sessionId);
+  redirect(`/sessions/${sessionId}`);
+}
 
 /** The family's side of "marked complete by both sides". */
 export async function confirmSession(sessionId: string) {

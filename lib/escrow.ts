@@ -8,6 +8,7 @@ import {
   captureEscrow,
   createAuthorizeOrder,
   createPayout,
+  getAuthorization,
   voidAuthorization,
   type EscrowAuthPatch,
 } from './paypal';
@@ -79,6 +80,7 @@ async function payTutor(sessionId: string, part: 'base' | 'bonus', capturedCents
 export async function captureBase(sessionId: string) {
   const escrow = await db.escrow.findUniqueOrThrow({ where: { session_id: sessionId }, include: { session: true } });
   if (escrow.base_capture_id) return escrow;
+  if (escrow.state === 'cancelled') throw new Error(`Session ${sessionId} was cancelled, so nothing is captured`);
   const baseCents = baseCentsFor(escrow.session.price_cents);
   const { capture } = await captureEscrow(escrow, {
     amountCents: baseCents,
@@ -117,7 +119,7 @@ export async function settle(sessionId: string) {
     include: { session: { include: { result: true, appeals: { where: { status: 'open' } } } } },
   });
   const { session } = escrow;
-  if (escrow.state === 'settled' || escrow.state === 'returned') return escrow;
+  if (escrow.state === 'settled' || escrow.state === 'returned' || escrow.state === 'cancelled') return escrow;
   if (session.appeals.length) throw new Error(`Session ${sessionId} has an open appeal`);
   if (!escrow.base_capture_id) await captureBase(sessionId);
 
@@ -182,10 +184,29 @@ export async function settle(sessionId: string) {
   return settled;
 }
 
+/**
+ * A booking was cancelled before it started: void the whole hold, so nothing is charged. Safe to
+ * repeat; a hold PayPal already voided or let expire needs nothing more.
+ */
+export async function cancelHold(sessionId: string) {
+  const escrow = await db.escrow.findUnique({ where: { session_id: sessionId }, include: { session: true } });
+  // An unpaid booking has no hold to release.
+  if (!escrow || escrow.state === 'cancelled') return escrow;
+  if (escrow.base_capture_id) throw new Error(`Session ${sessionId} was already paid out, so its hold can't be voided`);
+  const auth = await getAuthorization(escrow.authorization_id);
+  if (auth.status !== 'VOIDED' && auth.status !== 'EXPIRED') {
+    await voidAuthorization(escrow.authorization_id, `session-${sessionId}-cancel`);
+  }
+  return db.escrow.update({
+    where: { session_id: sessionId },
+    data: { state: 'cancelled', returned_cents: escrow.session.price_cents },
+  });
+}
+
 /** Where an escrow belongs once an appeal on it is resolved. */
 export async function restingState(sessionId: string): Promise<EscrowState> {
   const escrow = await db.escrow.findUniqueOrThrow({ where: { session_id: sessionId } });
-  if (escrow.state === 'settled' || escrow.state === 'returned') return escrow.state;
+  if (escrow.state === 'settled' || escrow.state === 'returned' || escrow.state === 'cancelled') return escrow.state;
   if (!escrow.base_capture_id) return 'held';
   const postGraded = await db.quiz.count({ where: { session_id: sessionId, kind: 'post', score: { not: null } } });
   return postGraded ? 'awaiting_retention' : 'base_paid';

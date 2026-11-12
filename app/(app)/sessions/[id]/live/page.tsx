@@ -12,7 +12,7 @@ export default async function LivePage({ params }: PageProps<'/sessions/[id]/liv
   const user = await requireUser('tutor');
   const session = await db.session.findUnique({ where: { id }, include: { student: true, escrow: true } });
   if (!session || session.tutor_id !== user.id) notFound();
-  if (!session.escrow) redirect(`/sessions/${id}`);
+  if (!session.escrow || session.status === 'cancelled') redirect(`/sessions/${id}`);
   if (session.topics_confirmed_at) redirect(`/sessions/${id}`);
 
   const topics = session.topics_json ? TopicListSchema.safeParse(session.topics_json) : null;

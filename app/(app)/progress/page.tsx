@@ -20,7 +20,7 @@ export default async function ProgressPage() {
 
   // Sessions this parent paid for, plus any booked for their children by someone else.
   const sessions = await db.session.findMany({
-    where: { escrow: { isNot: null }, OR: [{ payer_id: user.id }, { student: { parent_id: user.id } }] },
+    where: { escrow: { is: { state: { not: 'cancelled' } } }, OR: [{ payer_id: user.id }, { student: { parent_id: user.id } }] },
     include: { student: { select: { id: true, name: true } }, tutor: { select: { name: true } }, escrow: true, result: true },
     orderBy: { start_at: 'asc' },
   });

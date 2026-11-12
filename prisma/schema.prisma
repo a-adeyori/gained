@@ -23,6 +23,8 @@ enum EscrowState {
   settled
   returned
   in_appeal
+  // Cancelled before the session; the hold was voided (lib/cancellation.ts).
+  cancelled
 }
 
 enum QuizKind {
@@ -107,6 +109,10 @@ model Session {
   family_confirmed_at DateTime?
   // When the "starting soon" email with the meeting link went out (lib/scheduled.ts), so it's sent once.
   reminder_sent_at    DateTime?
+  // Set when someone cancels before the start (lib/cancellation.ts); status becomes "cancelled".
+  cancelled_at        DateTime?
+  cancelled_by_id     String?
+  cancel_reason       String?
   // Demo data from scripts/seed.ts. Never counted in public pilot results.
   is_seed             Boolean   @default(false)
   created_at          DateTime  @default(now())
