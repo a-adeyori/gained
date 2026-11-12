@@ -113,6 +113,11 @@ model Session {
   cancelled_at        DateTime?
   cancelled_by_id     String?
   cancel_reason       String?
+  // Set when the session is moved (lib/reschedule.ts): the start it had before the latest move.
+  rescheduled_from    DateTime?
+  // Overrides "24 hours before the start" for free cancellation: a family that moved the session
+  // inside that window keeps the late-cancellation terms of the original time.
+  free_cancel_until   DateTime?
   // Demo data from scripts/seed.ts. Never counted in public pilot results.
   is_seed             Boolean   @default(false)
   created_at          DateTime  @default(now())

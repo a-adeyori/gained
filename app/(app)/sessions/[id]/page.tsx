@@ -23,6 +23,26 @@ import { canCancel, cancellationFeeCents, freeCancelUntil } from '@/lib/cancella
 import { formatUsd } from '@/lib/escrow-states';
 import { confirmSession } from './actions';
 import { CancelCard } from './cancel-card';
+import { RescheduleCard } from './reschedule-card';
+import { canReschedule, latestNewStart, rescheduleOptions } from '@/lib/reschedule';
+import { tutorSessionsAround } from '../../book/queries';
+
+/** The tutor's open times this session could move to. */
+async function openTimesFor(
+  session: { id: string; tutor_id: string; status: string; start_at: Date; end_at: Date; price_cents: number; payer_id: string; student_id: string },
+  authorizedAt: Date,
+  now: Date,
+) {
+  const latest = latestNewStart(authorizedAt, now);
+  const [availability, others] = await Promise.all([
+    db.availability.findMany({
+      where: { tutor_id: session.tutor_id, end_at: { gt: now }, start_at: { lt: latest } },
+      select: { start_at: true, end_at: true },
+    }),
+    tutorSessionsAround(session.tutor_id, now, latest),
+  ]);
+  return rescheduleOptions(session, availability, others, authorizedAt, now);
+}
 
 export const metadata: Metadata = { title: 'Session' };
 
@@ -105,6 +125,8 @@ export default async function SessionPage({ params }: PageProps<'/sessions/[id]'
     step?.kind === 'action' ? (step.quizId ? `/quiz/${step.quizId}?t=${quizToken(step.quizId)}` : step.href) : null;
   const showStep = step && (step.kind === 'wait' || (stepHref && stepHref !== `/sessions/${id}`));
   const cancel = canCancel(session, user, now);
+  const move = canReschedule(session, user, now);
+  const moveOptions = move.ok ? await openTimesFor(session, escrow.authorized_at, now) : [];
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -156,13 +178,28 @@ export default async function SessionPage({ params }: PageProps<'/sessions/[id]'
 
         {state === 'held' && isFamily && <HeldNotCharged cents={session.price_cents} />}
 
+        {move.ok ? (
+          <RescheduleCard
+            sessionId={id}
+            options={moveOptions.map((d) => d.toISOString())}
+            missed={now >= session.start_at}
+            note={
+              move.as === 'family' && now < session.start_at && now >= freeCancelUntil(session)
+                ? 'It starts in under 24 hours, so moving it keeps the late-cancellation terms: if you cancel later, half the price still goes to the tutor.'
+                : null
+            }
+          />
+        ) : (
+          !move.hidden && <p className="px-1 text-sm text-muted">{move.reason}</p>
+        )}
+
         {cancel.ok ? (
           <CancelCard
             sessionId={id}
             as={cancel.as}
             otherName={cancel.as === 'tutor' ? session.student.name : session.tutor.name}
             price={formatUsd(session.price_cents)}
-            freeUntil={cancel.as === 'family' ? freeCancelUntil(session.start_at).toISOString() : null}
+            freeUntil={cancel.as === 'family' ? freeCancelUntil(session).toISOString() : null}
             late={
               cancel.feeCents > 0
                 ? { feeCents: cancel.feeCents, fee: formatUsd(cancel.feeCents), rest: formatUsd(session.price_cents - cancel.feeCents) }
@@ -170,7 +207,8 @@ export default async function SessionPage({ params }: PageProps<'/sessions/[id]'
             }
           />
         ) : (
-          !cancel.hidden && <p className="px-1 text-sm text-muted">{cancel.reason}</p>
+          // The move notice above already tells a student who didn't pay to ask the payer.
+          !cancel.hidden && move.ok && <p className="px-1 text-sm text-muted">{cancel.reason}</p>
         )}
 
         {result?.pre_score != null && result.post_score != null ? (
